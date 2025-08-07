@@ -1,0 +1,10 @@
+streamlit
+pandas
+plotly
+scipy
+statsmodels
+scikit-learn
+matplotlib
+seaborn
+prophet==1.1.5
+xgboost

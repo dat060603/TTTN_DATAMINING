@@ -1,0 +1,192 @@
+/* ======= GLOBAL ======= */
+/* KHÔNG khuyến khích, chỉ dùng local dev */
+header[data-testid="stHeader"] {
+    visibility: hidden;
+}
+html, body, .block-container {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #F5F5F5;
+    color: #333333;
+
+}
+.block-container {
+    padding-top: 10rem;  /* hoặc 60px */
+}
+/* Có thể thêm cho main nếu cần */
+main {
+    padding-top: 4rem;
+}
+/* ======= TITLES ======= */
+h1, h2, h3 {
+    color: #2c3e50;
+    font-weight: 700;
+}
+h1 {
+    font-size: 36px;
+}
+h2 {
+    font-size: 28px;
+}
+h3 {
+    font-size: 22px;
+}
+
+/* ======= SIDEBAR ======= */
+.stSidebar {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-right: 1px solid #eaeaea;
+}
+.st-emotion-cache-1cypcdb {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-right: 1px solid #e0e0e0;
+}
+/* ======= BUTTONS ======= */
+.stButton > button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 16px;
+    transition: 0.3s ease-in-out;
+}
+.stButton > button:hover {
+    background-color: #388E3C;
+    transform: scale(1.05);
+}
+
+/* ======= EXPANDERS ======= */
+.st-expander {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+.st-expanderHeader {
+    background-color: #e8f5e9;
+}
+
+/* ======= TABLES ======= */
+.stDataFrame {
+    background-color: white;
+    border-radius: 6px;
+    padding: 1rem;
+}
+thead tr th {
+    background-color: #4CAF50 !important;
+    color: white !important;
+}
+tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+/* ======= TABS ======= */
+.stTabs [role="tab"] {
+    font-size: 16px;
+    padding: 0.5rem 1rem;
+    margin-right: 4px;
+    border-radius: 6px 6px 0 0;
+    background-color: #e8f5e9;
+    color: #333;
+}
+.stTabs [aria-selected="true"] {
+    background-color: #4CAF50;
+    color: white;
+}
+.stTabs [role="tab"]:hover {
+    background-color: #c8e6c9;
+    color: #000;
+}
+
+/* ======= METRICS ======= */
+[data-testid="metric-container"] {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+.block-container {
+                padding-top: 2rem;
+            }
+            .metric {
+                text-align: center !important;
+            }
+            .stMetric > div {
+                background-color: #f0f2f6;
+                padding: 10px;
+                border-radius: 10px;
+                border: 1px solid #ccc;
+            }
+/* Graph container padding */
+.stPlotlyChart {
+    padding: 10px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+/* ====== Slider & Number Input ====== */
+.stSlider, .stNumberInput {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+/* ====== Nút tải xuống ====== */
+.stDownloadButton button {
+    background-color: #0f4c81;
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    transition: all 0.3s ease-in-out;
+}
+
+.stDownloadButton button:hover {
+    background-color: #0c3a63;
+    transform: scale(1.02);
+}
+/* ====== Checkbox, Radio, Selectbox ====== */
+.stCheckbox label, .stRadio label, .stSelectbox label {
+    font-weight: 500;
+    font-size: 15px;
+    color: #333;
+}
+/* ====== Enhanced Filter Inputs ====== */
+
+/* Make selectbox, multiselect, text_input, and number_input stand out more */
+.stSelectbox, .stMultiSelect, .stTextInput, .stNumberInput, .stDateInput {
+    background-color: white !important;
+    border: 1.5px solid #4CAF50 !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+/* On hover or focus */
+.stSelectbox:hover, .stMultiSelect:hover,
+.stTextInput:hover, .stNumberInput:hover,
+.stDateInput:hover {
+    border-color: #388E3C !important;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2) !important;
+}
+
+/* Placeholder and text color for clarity */
+.stSelectbox div, .stMultiSelect div, .stTextInput input, .stNumberInput input {
+    color: #333 !important;
+    font-weight: 500 !important;
+}
+
+/* Label alignment and color */
+.stSelectbox label, .stMultiSelect label, .stTextInput label, .stNumberInput label {
+    color: #2c3e50;
+    font-weight: 600;
+}
+/* Hiệu ứng fade-in mượt mà */
+.fade-in {
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
