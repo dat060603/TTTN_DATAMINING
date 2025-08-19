@@ -1,18 +1,10 @@
-# # components/data_loader.py
-# import pandas as pd
-#
-# def load_data():
-#     # df = pd.read_csv("sales_data_sample_clean.csv", encoding='latin1')
-#     df = pd.read_csv("cleaned_sales_data.csv", encoding='latin1')
-#
-#     df["ORDERDATE"] = pd.to_datetime(df["ORDERDATE"])
-#     df["MONTH"] = df["ORDERDATE"].dt.to_period("M").astype(str)
-#     return df
+
 # cleaned_sales_data_final
 # components/data_loader.py
 import numpy as np
 import pandas as pd
 import streamlit as st
+
 @st.cache_data
 def load_data(path: str = "cleaned_sales_data_final.csv"):
     """
@@ -22,6 +14,7 @@ def load_data(path: str = "cleaned_sales_data_final.csv"):
       - numeric coercion cho PRICEEACH, QUANTITYORDERED, SALES, MSRP
       - tạo YEAR_ID, MONTH_ID
       - tạo TOTAL_ORDER_VALUE, SALES_DIFF
+      - giả lập COST (AVG_PRICE * 0.5 ± random noise)
     """
     # 1. Load (hỗ trợ dayfirst nếu file dùng dd/mm/YYYY)
     try:
@@ -29,12 +22,15 @@ def load_data(path: str = "cleaned_sales_data_final.csv"):
     except Exception:
         df = pd.read_csv(path, encoding='ISO-8859-1')
         df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'], dayfirst=True, errors='coerce')
+
     # 2. Chuẩn hoá cột
     df.columns = df.columns.str.upper().str.strip()
+
     # 3. Numeric coercion
     for c in ['QUANTITYORDERED', 'PRICEEACH', 'SALES', 'MSRP']:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors='coerce')
+
     # 4. ORDERDATE -> datetime và tạo YEAR_ID / MONTH_ID
     if 'ORDERDATE' in df.columns:
         df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'], errors='coerce', dayfirst=True)
@@ -45,6 +41,12 @@ def load_data(path: str = "cleaned_sales_data_final.csv"):
         df['TOTAL_ORDER_VALUE'] = df['QUANTITYORDERED'] * df['PRICEEACH']
     if ('SALES' in df.columns) and ('TOTAL_ORDER_VALUE' in df.columns):
         df['SALES_DIFF'] = df['SALES'] - df['TOTAL_ORDER_VALUE']
-    # 6. Tùy chọn: drop rows invalid ORDERDATE / SALES nếu muốn (comment nếu không muốn)
+    # 6. Giả lập cột COST
+    if 'PRICEEACH' in df.columns:
+        # Ví dụ: COST = 50% của PRICEEACH ± 10% random
+        np.random.seed(42)
+        df['COST'] = df['PRICEEACH'] * (0.5 + 0.1 * np.random.rand(len(df)))
+    # 7. Tùy chọn: drop rows invalid ORDERDATE / SALES nếu muốn (comment nếu không muốn)
     # df = df.dropna(subset=['ORDERDATE', 'SALES'])
     return df
+
