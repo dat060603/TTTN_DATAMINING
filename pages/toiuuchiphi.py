@@ -2,40 +2,20 @@ import pandas as pd
 import numpy as np
 import pulp
 import streamlit as st
-from components.data_loader import load_data  # nếu bạn đã có sẵn
+import matplotlib.pyplot as plt
+from components.data_loader import load_data
 
-def app():
-    st.title("🚚 Tối ưu lịch giao hàng từ 3 kho (Minimize Shipping Cost)")
-
-    # ===== 1. Đọc dữ liệu gốc =====
-    df = load_data()
-    df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
-
-    # ===== 2. Giả lập vị trí 3 kho =====
-    np.random.seed(42)
-    warehouses = {
-        "WH_A": (0, 0),     # Tọa độ kho 1
-        "WH_B": (50, 0),    # Tọa độ kho 2
-        "WH_C": (25, 43)    # Tọa độ kho 3
-    }
-
-    # Giả lập tọa độ khách hàng
-    df['cust_x'] = np.random.randint(0, 60, size=len(df))
-    df['cust_y'] = np.random.randint(0, 60, size=len(df))
-
-    # ===== 3. Tạo bảng chi phí cho từng kho và ngày =====
+def optimize_shipping(df, warehouses, capacity):
+    # Tạo bảng chi phí
     options = []
     for _, row in df.iterrows():
         for wh, wh_loc in warehouses.items():
-            # Khoảng cách Euclidean
             distance = np.sqrt((row['cust_x'] - wh_loc[0])**2 + (row['cust_y'] - wh_loc[1])**2)
-
             for day_offset in range(3):  # giao trong vòng 3 ngày
                 delivery_date = row['ORDERDATE'] + pd.Timedelta(days=day_offset)
 
-                # Tính chi phí
-                base_cost = distance * 0.4  # giá 0.4 USD/km
-                if delivery_date.weekday() >= 5:  # cuối tuần
+                base_cost = distance * 0.4
+                if delivery_date.weekday() >= 5:
                     base_cost += 5
                 if distance > 50:
                     base_cost += 8
@@ -45,29 +25,26 @@ def app():
                     'order_line': row['ORDERLINENUMBER'],
                     'warehouse': wh,
                     'delivery_date': delivery_date.strftime('%Y-%m-%d'),
-                    'cost': base_cost
+                    'cost': base_cost,
+                    'distance': distance
                 })
 
     cost_df = pd.DataFrame(options)
 
-    # ===== 4. Dictionary chi phí =====
     cost_dict = {
         (r['order_id'], r['order_line'], r['warehouse'], r['delivery_date']): r['cost']
         for _, r in cost_df.iterrows()
     }
 
-    # ===== 5. Tạo biến quyết định =====
+    # Biến quyết định
     orders = cost_df[['order_id', 'order_line']].drop_duplicates().to_records(index=False)
     x = pulp.LpVariable.dicts("x", cost_dict.keys(), cat="Binary")
 
-    # ===== 6. Khởi tạo mô hình =====
-    model = pulp.LpProblem("Minimize_Shipping_Cost_3WH", pulp.LpMinimize)
-
-    # Mục tiêu: tối thiểu hóa chi phí
+    # Mô hình
+    model = pulp.LpProblem("Minimize_Shipping_Cost", pulp.LpMinimize)
     model += pulp.lpSum(cost_dict[k] * x[k] for k in cost_dict.keys())
 
-    # ===== 7. Ràng buộc =====
-    # Mỗi order line giao đúng 1 lần (1 kho + 1 ngày)
+    # Ràng buộc: mỗi order line chỉ được chọn 1 phương án
     for oid, line in orders:
         model += pulp.lpSum(
             x[(oid, line, wh, date)]
@@ -75,20 +52,19 @@ def app():
             if oi == oid and li == line
         ) == 1
 
-    # Năng lực tối đa 8 đơn/kho/ngày
-    MAX_CAPACITY = 8
+    # Ràng buộc: capacity theo kho và ngày
     for wh in warehouses.keys():
         for d in cost_df['delivery_date'].unique():
             model += pulp.lpSum(
                 x[(oid, line, w, dd)]
                 for (oid, line, w, dd) in cost_dict.keys()
                 if w == wh and dd == d
-            ) <= MAX_CAPACITY
+            ) <= capacity
 
-    # ===== 8. Giải =====
+    # Giải
     model.solve(pulp.PULP_CBC_CMD(msg=False))
 
-    # ===== 9. Lấy kết quả =====
+    # Lấy kết quả
     assignments = [
         (oid, line, wh, date, cost_dict[(oid, line, wh, date)])
         for (oid, line, wh, date) in cost_dict.keys()
@@ -102,18 +78,52 @@ def app():
         right_on=['ORDERNUMBER', 'ORDERLINENUMBER'],
         how='left'
     ).drop(columns=['ORDERNUMBER', 'ORDERLINENUMBER'])
-
     result_df['ORDERDATE'] = result_df['ORDERDATE'].dt.strftime('%Y-%m-%d')
 
-    # ===== 10. Thống kê =====
-    orders_per_day_wh = result_df.groupby(['delivery_date', 'warehouse']).size().reset_index(name='num_orders')
-
-    # Hiển thị
-    st.subheader("📦 Lịch giao hàng tối ưu")
-    st.dataframe(result_df)
-
-    st.subheader("📊 Số đơn mỗi ngày tại từng kho")
-    st.dataframe(orders_per_day_wh)
-
     total_cost = result_df['shipping_cost'].sum()
-    st.success(f"💰 Tổng chi phí giao hàng: {total_cost:,.2f}")
+    return result_df, total_cost, cost_df
+
+def app():
+    st.title("🚚 So sánh tối ưu giao hàng: 1 kho vs 3 kho")
+
+    # Load data
+    df = load_data()
+    df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
+
+    # --- Scenario 1: 1 kho ---
+    warehouses_1 = {"WH_ONLY": (0, 0)}
+    res1, cost1, cost_df1 = optimize_shipping(df, warehouses_1, capacity=18)
+
+    # --- Scenario 2: 3 kho ---
+    warehouses_3 = {
+        "WH_A": (0, 0),
+        "WH_B": (50, 0),
+        "WH_C": (25, 43)
+    }
+    res3, cost3, cost_df3 = optimize_shipping(df, warehouses_3, capacity=13)
+
+    # Hiển thị kết quả
+    st.subheader("📦 Kết quả kịch bản 1 kho")
+    st.dataframe(res1.head(20))
+    st.success(f"Tổng chi phí: {cost1:,.2f}")
+
+    st.subheader("📦 Kết quả kịch bản 3 kho")
+    st.dataframe(res3.head(20))
+    st.success(f"Tổng chi phí: {cost3:,.2f}")
+
+    # --- Biểu đồ so sánh ---
+    st.subheader("📊 So sánh tổng chi phí giao hàng")
+    fig, ax = plt.subplots()
+    ax.bar(["1 kho"], [cost1], alpha=0.7, label="1 kho")
+    ax.bar(["3 kho"], [cost3], alpha=0.7, label="3 kho")
+    ax.set_ylabel("Chi phí")
+    st.pyplot(fig)
+
+    st.subheader("📊 Histogram chi phí từng đơn")
+    fig, ax = plt.subplots()
+    ax.hist(res1['shipping_cost'], bins=20, alpha=0.5, label="1 kho")
+    ax.hist(res3['shipping_cost'], bins=20, alpha=0.5, label="3 kho")
+    ax.set_xlabel("Chi phí đơn hàng")
+    ax.set_ylabel("Số lượng")
+    ax.legend()
+    st.pyplot(fig)

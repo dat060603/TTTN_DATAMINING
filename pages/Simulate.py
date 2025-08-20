@@ -258,7 +258,7 @@ def app():
             products = st.multiselect("ProductCode (tùy chọn)", available_products)
             st.markdown("---")
             st.markdown("---")
-            st.subheader("Giả định chi phí (nếu không có COST trong data)")
+            st.subheader("Giả định chi phí ")
             cost_pct_default = st.slider("Tỷ lệ chi phí trung bình trên Sales (%)", 0, 100, 50)
             cost_ratio_price = st.slider("Tỷ lệ chi phí trên PRICEEACH (nếu muốn) (%)", 0, 100, 30)
 

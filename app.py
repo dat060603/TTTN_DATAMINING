@@ -16,7 +16,6 @@ with st.sidebar:
         options=[
             "🏠 Trang chủ",
             "📈 Dashboard",
-
             "🔍 Data Reason",
             "💡 Optimize",
             "📅 Forecast",

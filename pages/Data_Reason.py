@@ -194,6 +194,7 @@ def app():
 
         st.subheader("3️⃣ Hồi quy đa biến: Dự đoán SALES từ PRICEEACH và QUANTITYORDERED")
 
+        # Chuẩn bị dữ liệu
         plot_df = _data[['SALES', 'PRICEEACH', 'QUANTITYORDERED']].dropna()
         plot_df = plot_df[(plot_df['SALES'] > 0) & (plot_df['PRICEEACH'] > 0) & (plot_df['QUANTITYORDERED'] > 0)]
 
@@ -202,18 +203,25 @@ def app():
         plot_df['PRICEEACH_LOG'] = np.log(plot_df['PRICEEACH'])
         plot_df['QUANTITYORDERED_LOG'] = np.log(plot_df['QUANTITYORDERED'])
 
+        # Hiển thị dữ liệu đã biến đổi log
+        with st.expander("📋 Xem dữ liệu đã log-transform"):
+            st.dataframe(plot_df[['PRICEEACH', 'QUANTITYORDERED', 'SALES',
+                                  'PRICEEACH_LOG', 'QUANTITYORDERED_LOG', 'SALES_LOG']].head(10))
+
+        # Huấn luyện mô hình hồi quy
         X = plot_df[['PRICEEACH_LOG', 'QUANTITYORDERED_LOG']]
         y = plot_df['SALES_LOG']
 
         model = LinearRegression()
         model.fit(X, y)
 
+        # Dự đoán và đánh giá
         y_pred = model.predict(X)
         r2 = model.score(X, y)
         mae = mean_absolute_error(y, y_pred)
         rmse = np.sqrt(mean_squared_error(y, y_pred))
 
-        # Display coefficients
+        # Hiển thị hệ số
         st.markdown(f"""
         ✅ **Hệ số hồi quy:**
         - PRICEEACH_LOG: **{model.coef_[0]:.4f}**
@@ -225,6 +233,15 @@ def app():
         - MAE: **{mae:.2f}**
         - RMSE: **{rmse:.2f}**
         """)
+
+        fig = px.scatter(
+            x=y,
+            y=y_pred,
+            labels={'x': 'SALES_LOG thực tế', 'y': 'SALES_LOG dự đoán'},
+            title='📊 So sánh SALES_LOG: Thực tế vs Dự đoán',
+            trendline='ols'
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
         # 🎯 Recommendation
         st.subheader("🤖 Recommendation từ mô hình")
@@ -243,6 +260,7 @@ def app():
 
         for rec in rec_lines:
             st.info(rec)
+
         st.subheader("🌐 Biểu đồ 3D: Quan hệ giữa Giá, Số lượng và Doanh thu")
 
         fig3d = go.Figure(data=[go.Scatter3d(
@@ -391,34 +409,49 @@ def app():
         - Mô hình hồi quy giúp đánh giá **ảnh hưởng của các biến đầu vào (giá, số lượng, loại sản phẩm)** lên **doanh thu hoặc số lượng bán**.
         - Hệ số hồi quy cho biết: Khi một biến tăng 1 đơn vị, biến mục tiêu tăng/giảm bao nhiêu (nếu giữ các yếu tố khác không đổi).
         - Residual plot giúp kiểm tra **sai số mô hình** — nếu phân tán đều quanh 0 thì mô hình tốt.
-        2. Ảnh hưởng của các yếu tố đến doanh thu
-        Từ mô hình SALES ~ QUANTITYORDERED + PRICEEACH,thấy rằng:
-        Giá bán và số lượng bán ra là 2 yếu tố chính ảnh hưởng đến doanh thu.        
-        Khi thêm PRODUCTLINE, sai số giảm nhẹ → chứng tỏ:
-        Dòng sản phẩm là yếu tố quan trọng, có thể có chiến lược giá/khuyến mãi khác nhau cho từng dòng.
+        2. **Ảnh hưởng của các yếu tố đến doanh thu**
+        - Từ mô hình SALES ~ QUANTITYORDERED + PRICEEACH,thấy rằng:
+        - Giá bán và số lượng bán ra là 2 yếu tố chính ảnh hưởng đến doanh thu.        
+        - Khi thêm PRODUCTLINE, sai số giảm nhẹ → chứng tỏ:
+        -Dòng sản phẩm là yếu tố quan trọng, có thể có chiến lược giá/khuyến mãi khác nhau cho từng dòng.
+        
+        3. **Mô hình 3: SALES ~ QUANTITYORDERED + PRICEEACH + PRODUCTLINE**
+        - Giống mô hình 2 nhưng thêm biến phân loại PRODUCTLINE (được mã hóa dạng dummy).
+        - Hệ số các dòng sản phẩm đều âm, ví dụ:
+        - PRODUCTLINE = Ships: -752 → doanh thu trung bình thấp hơn dòng gốc ~752 USD.
+        - Sai số giảm:
+            + MAE giảm từ 689 → 659            
+            + RMSE giảm từ 951 → 923           
+        🎯 Giúp hiểu doanh thu không chỉ phụ thuộc vào số lượng và giá, mà còn theo từng dòng sản phẩm → mô hình tốt hơn về mặt giải thích & độ chính xác.           
+        ✅ Mô hình tốt nhất để sử dụng nếu muốn ra quyết định dựa trên phân tích dòng sản phẩm.
         """)
     # ===============================
     # Tab 5: Phân tích theo nhóm
     # ===============================
     with tabs[4]:
         st.subheader("5️⃣ Phân tích theo nhóm (PRODUCTLINE / DEALSIZE)")
+
         group_options = [g for g in ['PRODUCTLINE', 'DEALSIZE'] if g in _data.columns]
+
         if not group_options:
             st.warning("Không có biến nhóm.")
         else:
             group_by = st.selectbox("Nhóm theo:", options=group_options)
             chosen_groups = st.multiselect("Chọn nhóm:", options=_data[group_by].unique().tolist())
+
             sub = _data[_data[group_by].isin(chosen_groups)]
 
             if len(sub) == 0:
                 st.warning("Không có dữ liệu nhóm.")
             else:
+                # 📊 Scatter chart
                 st.plotly_chart(
                     px.scatter(sub, x='PRICEEACH', y='QUANTITYORDERED', color=group_by),
                     use_container_width=True,
                     key=f"scatter_tab5_{group_by}"
                 )
 
+                # 📉 Hồi quy theo nhóm
                 results = []
                 for g in chosen_groups:
                     dfg = sub[sub[group_by] == g].dropna(subset=['PRICEEACH', 'QUANTITYORDERED'])
@@ -434,11 +467,41 @@ def app():
                     except:
                         row.update({'pearson_r': None, 'coef': None, 'rmse': None})
                     results.append(row)
-                st.dataframe(pd.DataFrame(results))
-        st.markdown("""
-        **🧠 Giải thích:**
-        - Phân tích theo nhóm (PRODUCTLINE hoặc DEALSIZE) giúp so sánh **hiệu quả giữa các dòng sản phẩm hoặc quy mô giao dịch**.
-        - Pearson r: hệ số tương quan (gần 1 hoặc -1 là tương quan mạnh).
-        - Coef: độ nhạy của số lượng bán khi giá thay đổi.
-        - RMSE: sai số dự đoán — càng thấp càng tốt.
-        """)
+
+                result_df = pd.DataFrame(results)
+                st.dataframe(result_df)
+
+                # 🧠 Giải thích chỉ số
+                st.markdown("""
+                **🧠 Giải thích:**
+                - Phân tích theo nhóm (PRODUCTLINE hoặc DEALSIZE) giúp so sánh **hiệu quả giữa các dòng sản phẩm hoặc quy mô giao dịch**.
+                - **Pearson r**: hệ số tương quan (gần 1 hoặc -1 là tương quan mạnh).
+                - **Coef**: độ nhạy của số lượng bán khi giá thay đổi.
+                - **RMSE**: sai số dự đoán.
+                """)
+
+                # 📌 Recommendation tự động
+                st.subheader("📌 Recommendation ")
+
+                for _, row in result_df.iterrows():
+                    group = row['group']
+                    coef = row['coef']
+                    r = row['pearson_r']
+                    rmse = row['rmse']
+
+                    if coef is None or r is None:
+                        st.info(f"ℹ️ **{group}**: Không đủ dữ liệu để đưa ra nhận định.")
+                        continue
+
+                    if coef < -0.03 and abs(r) > 0.05:
+                        st.warning(
+                            f"❗ **{group}**: Giá tăng làm giảm số lượng bán đáng kể (coef = {coef:.4f}, r = {r:.2f}). Nên xem lại chiến lược giá.")
+                    elif coef > 0.03 and r > 0.05:
+                        st.success(
+                            f"✅ **{group}**: Giá tăng đi kèm tăng số lượng bán (coef = {coef:.4f}, r = {r:.2f}) — tiềm năng mở rộng thị trường.")
+                    elif abs(coef) < 0.01 and abs(r) < 0.05:
+                        st.info(
+                            f"ℹ️ **{group}**: Không có mối liên hệ rõ ràng giữa giá và số lượng — có thể không bị ảnh hưởng bởi giá.")
+                    else:
+                        st.info(
+                            f"📌 **{group}**: Tác động giá ở mức trung bình (coef = {coef:.4f}, r = {r:.2f}) — cân nhắc tùy mục tiêu.")
