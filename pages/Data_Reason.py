@@ -27,7 +27,7 @@ def app():
 
     # ======= Load CSS =======
     def local_css(file_name):
-        with open(file_name) as f:
+        with open(file_name, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     local_css("style.css")
 
@@ -92,12 +92,19 @@ def app():
             st.dataframe(corr_df.style.format("{:.3f}"))
         else:
             st.info("Cần ít nhất 2 cột numeric.")
-        st.markdown("""
-        **🧠 Giải thích:**
-        - Ma trận tương quan cho biết **mức độ liên quan tuyến tính giữa các biến**.
-        - Ví dụ: Nếu `PRICEEACH` và `SALES` có hệ số tương quan cao (gần 1 hoặc -1), tức là khi giá thay đổi thì doanh thu cũng thay đổi theo hướng tương ứng.
-        - Màu đỏ biểu thị mối tương quan âm, màu xanh dương biểu thị mối tương quan dương.
-        """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3> Giải thích:</h3>
+                <ul>
+                    <li>Ma trận tương quan cho biết <b>mức độ liên quan tuyến tính giữa các biến</b>.</li>
+                    <li>Ví dụ: Nếu <code>PRICEEACH</code> và <code>SALES</code> có hệ số tương quan cao (gần 1 hoặc -1), tức là khi giá thay đổi thì doanh thu cũng thay đổi theo hướng tương ứng.</li>
+                    <li>Màu đỏ biểu thị mối tương quan âm, màu xanh dương biểu thị mối tương quan dương.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     # ===============================
     # Tab 2: Scatter + Trendline OLS
@@ -145,12 +152,25 @@ def app():
         else:
             st.warning("Thiếu SALES hoặc QUANTITYORDERED.")
 
-        st.markdown("""
-        **🧠 Giải thích:**
-        - Biểu đồ phân tán (scatter plot) giúp nhận diện **mối quan hệ giữa doanh thu (SALES) và số lượng bán (QUANTITYORDERED)**.
-        - Đường trendline (OLS) cho biết xu hướng tổng thể: Nếu dốc lên → số lượng bán tăng thì doanh thu tăng.
-        - Dùng log scale để dễ quan sát khi dữ liệu có độ chênh lệch lớn.
-        """)
+        # st.markdown("""
+        # **🧠 Giải thích:**
+        # - Biểu đồ phân tán (scatter plot) giúp nhận diện **mối quan hệ giữa doanh thu (SALES) và số lượng bán (QUANTITYORDERED)**.
+        # - Đường trendline (OLS) cho biết xu hướng tổng thể: Nếu dốc lên → số lượng bán tăng thì doanh thu tăng.
+        # - Dùng log scale để dễ quan sát khi dữ liệu có độ chênh lệch lớn.
+        # """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3> Giải thích:</h3>
+                <ul>
+                    <li>Biểu đồ phân tán (scatter plot) giúp nhận diện <b>mối quan hệ giữa doanh thu (SALES) và số lượng bán (QUANTITYORDERED)</b>.</li>
+                    <li>Đường trendline (OLS) cho biết xu hướng tổng thể: <b>Nếu dốc lên → số lượng bán tăng thì doanh thu tăng</b>.</li>
+                    <li>Dùng log scale để dễ quan sát khi dữ liệu có độ chênh lệch lớn.</b>.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         st.subheader("2️⃣ Scatter SALES vs PRICEEACH")
 
         if 'SALES' in _data.columns and 'PRICEEACH' in _data.columns:
@@ -186,11 +206,23 @@ def app():
                 st.markdown(
                     f"**OLS Trendline:** coef = {model2.coef_[0]:.4f}, intercept = {model2.intercept_:.4f}, R² = {r2_score(y, model2.predict(X)):.4f}")
 
-        st.markdown("""
-           **🧠 Giải thích:**
-           - Biểu đồ này giúp kiểm tra **giá cao có giúp tăng doanh thu không**.
-           - Nếu trendline lên → các sản phẩm giá cao vẫn bán chạy → có thể tăng giá dòng cao cấp.
-           """)
+        # st.markdown("""
+        #    **🧠 Giải thích:**
+        #    - Biểu đồ này giúp kiểm tra **giá cao có giúp tăng doanh thu không**.
+        #    - Nếu trendline lên → các sản phẩm giá cao vẫn bán chạy → có thể tăng giá dòng cao cấp.
+        #    """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3> Giải thích:</h3>
+                <ul>
+                    <li>Biểu đồ này giúp kiểm tra <b>giá cao có giúp tăng doanh thu không</b>.</li>
+                    <li>Nếu trendline lên → <b>các sản phẩm giá cao vẫn bán chạy → có thể tăng giá dòng cao cấp</b>.</li>                
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         st.subheader("3️⃣ Hồi quy đa biến: Dự đoán SALES từ PRICEEACH và QUANTITYORDERED")
 
@@ -220,7 +252,29 @@ def app():
         r2 = model.score(X, y)
         mae = mean_absolute_error(y, y_pred)
         rmse = np.sqrt(mean_squared_error(y, y_pred))
-
+        #
+        st.subheader("🌐 Biểu đồ 3D: Quan hệ giữa Giá, Số lượng và Doanh thu")
+        fig3d = go.Figure(data=[go.Scatter3d(
+            x=plot_df['PRICEEACH'],
+            y=plot_df['QUANTITYORDERED'],
+            z=plot_df['SALES'],
+            mode='markers',
+            marker=dict(
+                size=4,
+                color=plot_df['SALES'],  # màu theo giá trị SALES
+                colorscale='Viridis',
+                opacity=0.7
+            )
+        )])
+        fig3d.update_layout(
+            scene=dict(
+                xaxis_title='Giá bán (PRICEEACH)',
+                yaxis_title='Số lượng (QUANTITYORDERED)',
+                zaxis_title='Doanh thu (SALES)'
+            ),
+            margin=dict(l=0, r=0, b=0, t=40)
+        )
+        st.plotly_chart(fig3d, use_container_width=True)
         # Hiển thị hệ số
         st.markdown(f"""
         ✅ **Hệ số hồi quy:**
@@ -261,31 +315,7 @@ def app():
         for rec in rec_lines:
             st.info(rec)
 
-        st.subheader("🌐 Biểu đồ 3D: Quan hệ giữa Giá, Số lượng và Doanh thu")
 
-        fig3d = go.Figure(data=[go.Scatter3d(
-            x=plot_df['PRICEEACH'],
-            y=plot_df['QUANTITYORDERED'],
-            z=plot_df['SALES'],
-            mode='markers',
-            marker=dict(
-                size=4,
-                color=plot_df['SALES'],  # màu theo giá trị SALES
-                colorscale='Viridis',
-                opacity=0.7
-            )
-        )])
-
-        fig3d.update_layout(
-            scene=dict(
-                xaxis_title='Giá bán (PRICEEACH)',
-                yaxis_title='Số lượng (QUANTITYORDERED)',
-                zaxis_title='Doanh thu (SALES)'
-            ),
-            margin=dict(l=0, r=0, b=0, t=40)
-        )
-
-        st.plotly_chart(fig3d, use_container_width=True)
 
     # =========================
     # Tab 3: SALES_DIFF phân tích
@@ -326,14 +356,29 @@ def app():
                 "💡 **Ý nghĩa:** Những chênh lệch này có thể đến từ chiết khấu, sai lệch nhập liệu hoặc điều chỉnh thủ công. Quản lý nên kiểm tra các đơn có chênh lệch lớn để đảm bảo dữ liệu chính xác.")
         else:
             st.warning("Không đủ cột để tính SALES_DIFF.")
-        st.markdown("""
-        **🧠 Giải thích:**
-        - Chênh lệch giữa `SALES` (doanh thu thực tế) và `QUANTITYORDERED * PRICEEACH` giúp **phát hiện bất thường trong đơn hàng**, ví dụ:
-          - Có chiết khấu ẩn.
-          - Giá khuyến mãi không đồng nhất.
-          - Lỗi nhập dữ liệu hoặc điều chỉnh giá.
-        - Những dòng có `SALES_DIFF` lớn cần được kiểm tra kỹ.
-        """)
+        # st.markdown("""
+        # **🧠 Giải thích:**
+        # - Chênh lệch giữa `SALES` (doanh thu thực tế) và `QUANTITYORDERED * PRICEEACH` giúp **phát hiện bất thường trong đơn hàng**, ví dụ:
+        #   - Có chiết khấu ẩn.
+        #   - Giá khuyến mãi không đồng nhất.
+        #   - Lỗi nhập dữ liệu hoặc điều chỉnh giá.
+        # - Những dòng có `SALES_DIFF` lớn cần được kiểm tra kỹ.
+        # """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3> Giải thích:</h3>
+                <ul>
+                    <li>Chênh lệch giữa `SALES` (doanh thu thực tế) và `QUANTITYORDERED * PRICEEACH` giúp <b>phát hiện bất thường trong đơn hàng</b>.</li>
+                    <li>Có chiết khấu ẩn</li> 
+                     <li>Giá khuyến mãi không đồng nhất</li> 
+                    <li>Lỗi nhập dữ liệu hoặc điều chỉnh giá</li>  
+                     <li>Những dòng có `SALES_DIFF` lớn cần được kiểm tra kỹ    </li>       
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     # ===============================
     # Tab 4: Hồi quy đơn giản
@@ -404,27 +449,50 @@ def app():
                 st.warning("Không đủ dữ liệu để chạy mô hình (cần ≥10 dòng).")
         else:
             st.warning("Thiếu dữ liệu cần thiết để chạy mô hình.")
-        st.markdown("""
-        1.**🧠 Giải thích:**
-        - Mô hình hồi quy giúp đánh giá **ảnh hưởng của các biến đầu vào (giá, số lượng, loại sản phẩm)** lên **doanh thu hoặc số lượng bán**.
-        - Hệ số hồi quy cho biết: Khi một biến tăng 1 đơn vị, biến mục tiêu tăng/giảm bao nhiêu (nếu giữ các yếu tố khác không đổi).
-        - Residual plot giúp kiểm tra **sai số mô hình** — nếu phân tán đều quanh 0 thì mô hình tốt.
-        2. **Ảnh hưởng của các yếu tố đến doanh thu**
-        - Từ mô hình SALES ~ QUANTITYORDERED + PRICEEACH,thấy rằng:
-        - Giá bán và số lượng bán ra là 2 yếu tố chính ảnh hưởng đến doanh thu.        
-        - Khi thêm PRODUCTLINE, sai số giảm nhẹ → chứng tỏ:
-        -Dòng sản phẩm là yếu tố quan trọng, có thể có chiến lược giá/khuyến mãi khác nhau cho từng dòng.
-        
-        3. **Mô hình 3: SALES ~ QUANTITYORDERED + PRICEEACH + PRODUCTLINE**
-        - Giống mô hình 2 nhưng thêm biến phân loại PRODUCTLINE (được mã hóa dạng dummy).
-        - Hệ số các dòng sản phẩm đều âm, ví dụ:
-        - PRODUCTLINE = Ships: -752 → doanh thu trung bình thấp hơn dòng gốc ~752 USD.
-        - Sai số giảm:
-            + MAE giảm từ 689 → 659            
-            + RMSE giảm từ 951 → 923           
-        🎯 Giúp hiểu doanh thu không chỉ phụ thuộc vào số lượng và giá, mà còn theo từng dòng sản phẩm → mô hình tốt hơn về mặt giải thích & độ chính xác.           
-        ✅ Mô hình tốt nhất để sử dụng nếu muốn ra quyết định dựa trên phân tích dòng sản phẩm.
-        """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3>Giải thích:</h3>
+                <ol>
+                    <li>
+                        Mô hình hồi quy giúp đánh giá <b>ảnh hưởng của các biến đầu vào (giá, số lượng, loại sản phẩm)</b> lên <b>doanh thu hoặc số lượng bán</b>.
+                    </li>
+                    <li>
+                        Hệ số hồi quy cho biết: Khi một biến tăng 1 đơn vị, biến mục tiêu tăng/giảm bao nhiêu (giữ các yếu tố khác không đổi).
+                    </li>
+                    <li>
+                        Residual plot giúp kiểm tra <b>sai số mô hình</b> — nếu phân tán đều quanh 0 thì mô hình tốt.
+                    </li>
+                </ol>
+                
+            <h3>Mô hình 3: SALES ~ QUANTITYORDERED + PRICEEACH + PRODUCTLINE</h3>
+            <ul>
+                <li>Giống mô hình 2 nhưng thêm biến phân loại <code>PRODUCTLINE</code> (mã hóa dạng dummy).</li>
+                <li>
+                    Hệ số các dòng sản phẩm đều âm, ví dụ:
+                    <div style="margin-left:20px;">
+                        <ul>
+                            <li><code>PRODUCTLINE = Ships</code>: -752 → doanh thu trung bình thấp hơn dòng gốc ~752 USD.</li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    Sai số giảm:
+                    <div style="margin-left:20px;">
+                        <ul>
+                            <li>MAE giảm từ 689 → 659</li>
+                            <li>RMSE giảm từ 951 → 923</li>
+                        </ul>
+                    </div>
+                </li>
+                <li>Hiểu rằng doanh thu không chỉ phụ thuộc vào số lượng và giá, mà còn theo từng dòng sản phẩm → mô hình tốt hơn về giải thích & độ chính xác.</li>
+                <li>Mô hình tốt nhất để sử dụng nếu muốn ra quyết định dựa trên phân tích dòng sản phẩm.</li>
+            </ul>
+                </div>
+            """,
+            unsafe_allow_html=True
+        )
+
     # ===============================
     # Tab 5: Phân tích theo nhóm
     # ===============================

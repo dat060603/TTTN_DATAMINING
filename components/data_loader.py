@@ -27,12 +27,10 @@ def load_data(path: str = "cleaned_sales_data_final.csv"):
 
     # 2. Chuẩn hoá cột
     df.columns = df.columns.str.upper().str.strip()
-
     # 3. Numeric coercion
     for c in ['QUANTITYORDERED', 'PRICEEACH', 'SALES', 'MSRP']:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors='coerce')
-
     # 4. ORDERDATE -> datetime và tạo YEAR_ID / MONTH_ID
     if 'ORDERDATE' in df.columns:
         df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'], errors='coerce', dayfirst=True)

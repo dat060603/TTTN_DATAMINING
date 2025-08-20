@@ -7,7 +7,7 @@ from components.data_loader import load_data
 import time
 def app():
     def local_css(file_name):
-        with open(file_name) as f:
+        with open(file_name,"r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     local_css("style.css")
     st.title("📈 Dashboard")
@@ -81,66 +81,72 @@ def app():
         (df_filtered['PRODUCTLINE'].isin(selected_product))
         ]
 
+    # Hàm làm tròn và rút gọn số liệu
+    def format_currency(val):
+        if val >= 1_000_000:
+            return f"${val / 1_000_000:.2f}M"
+        elif val >= 1_000:
+            return f"${val / 1_000:.1f}K"
+        else:
+            return f"${val:.2f}"
+
     # --- KPI sau khi lọc ---
     st.subheader("📌 Thống kê số liệu kinh doanh")
 
-    # --- Hàng 1: Doanh thu & Đơn hàng & Giá trung bình ---
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.markdown(f"<div class='metric-big'>💰 ${df_filtered['SALES'].sum():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Doanh thu</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='metric-big'>📊 ${df_filtered['SALES'].mean():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Doanh thu trung bình</div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"<div class='metric-big'>🏆 ${df['SALES'].max():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Doanh thu cao nhất</div>", unsafe_allow_html=True)
+    # Hàm hiển thị KPI với CSS
+    def kpi_card(value, label):
+        st.markdown(
+            f"""
+            <div class="kpi-box">
+                <div class="metric-big">{value}</div>
+                <div class="metric-label">{label}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    with col4:
-        st.markdown(f"<div class='metric-big'>📉 ${df['SALES'].min():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Doanh thu nhỏ nhất</div>", unsafe_allow_html=True)
+    # --- Hàng 1: Doanh thu ---
+    cols = st.columns(4)
+    kpi_values = [
+        ("💰 " + format_currency(df_filtered['SALES'].sum()), "Tổng Doanh thu"),
+        ("📊 " + format_currency(df_filtered['SALES'].mean()), "Doanh thu trung bình"),
+        ("🏆 " + format_currency(df_filtered['SALES'].max()), "Doanh thu cao nhất"),
+        ("📉 " + format_currency(df_filtered['SALES'].min()), "Doanh thu thấp nhất")
+    ]
+    for col, (value, label) in zip(cols, kpi_values):
+        with col:
+            kpi_card(value, label)
 
+    # --- Hàng 2: Chi phí ---
+    total_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).sum()
+    avg_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).mean()
+    max_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).max()
+    min_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).min()
 
-    st.markdown("---")
+    cols = st.columns(4)
+    kpi_values = [
+        ("💵 " + format_currency(total_cost), "Tổng COST"),
+        ("💰 " + format_currency(avg_cost), "COST trung bình"),
+        ("📈 " + format_currency(max_cost), "COST cao nhất"),
+        ("📉 " + format_currency(min_cost), "COST thấp nhất")
+    ]
+    for col, (value, label) in zip(cols, kpi_values):
+        with col:
+            kpi_card(value, label)
 
-    # --- Hàng 2: COST ---
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        total_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).sum()
-        st.markdown(f"<div class='metric-big'>💵 ${total_cost:,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Tổng COST</div>", unsafe_allow_html=True)
-    with col2:
-        avg_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).mean()
-        st.markdown(f"<div class='metric-big'>💰 ${avg_cost:,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>COST trung bình</div>", unsafe_allow_html=True)
-    with col3:
-        max_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).max()
-        st.markdown(f"<div class='metric-big'>📈 ${max_cost:,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>COST cao nhất</div>", unsafe_allow_html=True)
-    with col4:
-        min_cost = (df_filtered['COST'] * df_filtered['QUANTITYORDERED']).min()
-        st.markdown(f"<div class='metric-big'>📉 ${min_cost:,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>COST thấp nhất</div>", unsafe_allow_html=True)
+    # --- Hàng 3: Lợi nhuận ---
+    df_filtered['PROFIT'] = df_filtered['SALES'] - df_filtered['COST'] * df_filtered['QUANTITYORDERED']
 
-    st.markdown("---")
-
-    # --- Hàng 3: LỢI NHUẬN ---
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        df_filtered['PROFIT'] = df_filtered['SALES'] - df_filtered['COST'] * df_filtered['QUANTITYORDERED']
-        st.markdown(f"<div class='metric-big'>💰 ${df_filtered['PROFIT'].sum():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Tổng PROFIT</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='metric-big'>📊 ${df_filtered['PROFIT'].mean():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Profit trung bình</div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"<div class='metric-big'>📈 ${df_filtered['PROFIT'].max():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Profit cao nhất</div>", unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"<div class='metric-big'>📉 ${df_filtered['PROFIT'].min():,.2f}</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Profit thấp nhất</div>", unsafe_allow_html=True)
-
-    st.markdown("---")
+    cols = st.columns(4)
+    kpi_values = [
+        ("💰 " + format_currency(df_filtered['PROFIT'].sum()), "Tổng PROFIT"),
+        ("📊 " + format_currency(df_filtered['PROFIT'].mean()), "Profit trung bình"),
+        ("📈 " + format_currency(df_filtered['PROFIT'].max()), "Profit cao nhất"),
+        ("📉 " + format_currency(df_filtered['PROFIT'].min()), "Profit thấp nhất")
+    ]
+    for col, (value, label) in zip(cols, kpi_values):
+        with col:
+            kpi_card(value, label)
 
     # Top products & customers
     st.subheader("📊 Top doanh thu theo nhiều chiều")
@@ -449,14 +455,27 @@ def app():
             with col2:
                 fig_box = px.box(df_filtered, y='SALES', title="Box Plot: Doanh thu")
                 st.plotly_chart(fig_box, use_container_width=True)
-            st.markdown("""
-                                    **🧠 Khuyến nghị**
-                                    - Xây dựng chiến lược giá: Nhắm vào khoảng giá có nhiều đơn hàng.
-                                    - Chăm sóc khách hàng: Ưu tiên nhóm tạo ra doanh thu cao hoặc ổn định.
-                                    - Phân loại khách hàng: Dựa theo giá trị đơn hàng để phân nhóm.
-                                    - Tối ưu danh mục sản phẩm: Nhận diện sản phẩm có đơn hàng cao/bất thường.
-                                    """)
-
+            # st.markdown("""
+            #                         **🧠 **
+            #                         - Xây dựng chiến lược giá: Nhắm vào khoảng giá có nhiều đơn hàng.
+            #                         - Chăm sóc khách hàng: Ưu tiên nhóm tạo ra doanh thu cao hoặc ổn định.
+            #                         - Phân loại khách hàng: Dựa theo giá trị đơn hàng để phân nhóm.
+            #                         - Tối ưu danh mục sản phẩm: Nhận diện sản phẩm có đơn hàng cao/bất thường.
+            #                         """)
+            st.markdown(
+                """
+                <div class="recommendation-box">
+                    <h3> Khuyến nghị:</h3>
+                    <ul>
+                        <li>Xây dựng chiến lược giá: <b>Nhắm vào khoảng giá có nhiều đơn hàng.</b>.</li>
+                        <li>Chăm sóc khách hàng:<b>Ưu tiên nhóm tạo ra doanh thu cao hoặc ổn định.</b>.</li>
+                        <li>Phân loại khách hàng:<b> Dựa theo giá trị đơn hàng để phân nhóm.</b>.</li>
+                        <li>Tối ưu danh mục sản phẩm:<b> Nhận diện sản phẩm có đơn hàng cao/bất thường.</b>.</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
             st.info("Không có cột SALES để hiển thị.")
     st.markdown("---")
@@ -522,13 +541,28 @@ def app():
                          color='PROFIT', color_continuous_scale='RdYlGn',
                          title='Treemap: Doanh thu & Profit theo dòng sản phẩm')
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown("""
-                        **🧠 Khuyến nghị**
-                        - Dòng sản phẩm tạo doanh thu lớn và lợi nhuận cao → nên ưu tiên phát triển.
-                        - Doanh thu cao nhưng lợi nhuận thấp → cần xem lại chi phí, định giá.
-                        - Doanh thu thấp nhưng lợi nhuận tốt → có thể là sản phẩm ngách tiềm năng.
-                        - Doanh thu và lợi nhuận thấp → cân nhắc loại bỏ để tiết kiệm nguồn lực.
-                         """)
+        # st.markdown("""
+        #                 **🧠 Khuyến nghị**
+        #                 - Dòng sản phẩm tạo doanh thu lớn và lợi nhuận cao → nên ưu tiên phát triển.
+        #                 - Doanh thu cao nhưng lợi nhuận thấp → cần xem lại chi phí, định giá.
+        #                 - Doanh thu thấp nhưng lợi nhuận tốt → có thể là sản phẩm ngách tiềm năng.
+        #                 - Doanh thu và lợi nhuận thấp → cân nhắc loại bỏ để tiết kiệm nguồn lực.
+        #                  """)
+        st.markdown(
+            """
+            <div class="recommendation-box">
+                <h3> Khuyến nghị:</h3>
+                <ul>
+                    <li>Dòng sản phẩm tạo doanh thu lớn và lợi nhuận cao →<b>nên ưu tiên phát triển</b>.</li>
+                    <li>Doanh thu cao nhưng lợi nhuận thấp → <b>cần xem lại chi phí, định giá</b>.</li>
+                    <li>Doanh thu thấp nhưng lợi nhuận tốt →<b> có thể là sản phẩm ngách tiềm năng</b>.</li>
+                    <li>Doanh thu và lợi nhuận thấp → <b> ân nhắc loại bỏ để tiết kiệm nguồn lực</b>.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
     st.markdown("---")
     #
     # Tabs hiển thị đồ họa

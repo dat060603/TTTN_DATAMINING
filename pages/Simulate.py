@@ -227,10 +227,12 @@ def load_and_prepare():
 def app():
     st.title("🔄 Simulate & What-if — Business Scenario Simulator")
     st.markdown("Ứng dụng mô phỏng kịch bản kinh doanh: thay đổi giá, chi phí, nhu cầu, marketing, discount...")
-
     df = load_and_prepare()
-
     # Bộ lọc & Tham số mô phỏng
+    def local_css(file_name):
+        with open(file_name, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    local_css("style.css")
     with st.expander("🛠 Bộ lọc & Tham số mô phỏng", expanded=True):
         with st.form("filters_form"):
             st.subheader("Bộ lọc dữ liệu")

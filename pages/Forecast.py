@@ -15,7 +15,7 @@ from prophet import Prophet
 from components.data_loader import load_data
 def app():
     def local_css(file_name):
-        with open(file_name) as f:
+        with open(file_name, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     local_css("style.css")
 # ====== Page config ======
@@ -312,24 +312,56 @@ def app():
                     if pct_change > 5:
                         st.success(f"Dự báo cho thấy **tăng {pct_change:.2f}%** trong giai đoạn dự báo.")
                         st.markdown(
-                            "- 👉 Nên chuẩn bị **tăng sản lượng hàng hóa**, tăng nhân lực kho/bán hàng.\n"
-                            "- 👉 Cân nhắc **tăng chiết khấu hoặc đẩy mạnh marketing** để khai thác xu hướng tốt.\n"
-                            "- 👉 Có thể tăng giá nhẹ nếu thị trường chấp nhận."
+                            """
+                            <div class="recommendation-box">
+                                <h3>Khuyến nghị hành động:</h3>
+                                <ul>
+                                    <li> Nên chuẩn bị <b>tăng sản lượng hàng hóa</b>, tăng nhân lực kho/bán hàng.</li>
+                                    <li> Cân nhắc <b>tăng chiết khấu hoặc đẩy mạnh marketing</b> để khai thác xu hướng tốt.</li>
+                                    <li> Có thể tăng giá nhẹ nếu thị trường chấp nhận.</li>
+                                </ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
                         )
                     elif pct_change < -5:
                         st.warning(f"Dự báo cho thấy **giảm {abs(pct_change):.2f}%** trong giai đoạn dự báo.")
+                        # st.markdown(
+                        #     "- ⚠️ Cần xem xét lý do giảm: mùa vụ, sản phẩm lỗi thời, cạnh tranh?\n"
+                        #     "- 👉 Xem xét **giảm tồn kho**, tối ưu chi phí, tập trung sản phẩm sinh lời cao.\n"
+                        #     "- 👉 Triển khai **khuyến mãi/ưu đãi** để kích cầu nếu cần."
+                        # )
                         st.markdown(
-                            "- ⚠️ Cần xem xét lý do giảm: mùa vụ, sản phẩm lỗi thời, cạnh tranh?\n"
-                            "- 👉 Xem xét **giảm tồn kho**, tối ưu chi phí, tập trung sản phẩm sinh lời cao.\n"
-                            "- 👉 Triển khai **khuyến mãi/ưu đãi** để kích cầu nếu cần."
+                            """
+                            <div class="recommendation-box">
+                                <h3>Khuyến nghị hành động:</h3>
+                                <ul>
+                                    <li> Cần xem xét lý do giảm: <b>mùa vụ, sản phẩm lỗi thời, cạnh tranh?</b></li>
+                                    <li> Xem xét <b>giảm tồn kho, tối ưu chi phí, tập trung sản phẩm sinh lời cao</b> </li>
+                                    <li> Triển khai <b>khuyến mãi/ưu đãi</b> để kích cầu nếu cần </li>
+                                </ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
                         )
                     else:
                         st.info(f"Dự báo ổn định với biến động nhỏ: {pct_change:.2f}%.")
+                        # st.markdown(
+                        #     "- 👍 Giữ ổn định hoạt động, không cần thay đổi lớn.\n"
+                        #     "- 👉 Có thể theo dõi thêm xu hướng dài hạn để hành động nếu cần."
+                        # )
                         st.markdown(
-                            "- 👍 Giữ ổn định hoạt động, không cần thay đổi lớn.\n"
-                            "- 👉 Có thể theo dõi thêm xu hướng dài hạn để hành động nếu cần."
+                            """
+                            <div class="recommendation-box">
+                                <h3>Khuyến nghị hành động:</h3>
+                                <ul>
+                                    <li> Giữ ổn định hoạt động, không cần thay đổi lớn</li>
+                                    <li>  Có thể theo dõi thêm xu hướng dài hạn để hành động nếu cần</li>                                  
+                                </ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
                         )
-
         # --------- Diagnostics tab ----------
         with tab_diag:
             st.subheader("Diagnostics")
@@ -366,15 +398,20 @@ def app():
                     fig_comp = m.plot_components(forecast)
                     st.pyplot(fig_comp)
                     st.markdown("#### Prophet Components (Seasonality)")
-                    st.markdown("""
-                                                    🟦 Giải thích:
+                    st.markdown(
+                        """
+                        <div class="recommendation-box">
+                            <h3>🟦 Giải thích:</h3>
+                            <ul>
+                                <li><b>Trend (Xu hướng):</b> dự báo doanh thu tăng/giảm về lâu dài.</li>
+                                <li><b>Yearly seasonality:</b> mô hình học được mùa vụ trong năm (ví dụ tháng 12 thường cao do lễ Tết).</li>
+                                <li><b>Weekly seasonality (nếu có):</b> các ngày trong tuần khác nhau ra sao (thứ 2 thấp, thứ 6 cao...).</li>
+                            </ul>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-                                                Trend (Xu hướng): dự báo doanh thu tăng/giảm về lâu dài.
-
-                                                Yearly seasonality: mô hình học được mùa vụ trong năm (ví dụ tháng 12 luôn cao do lễ tết).
-
-                                                Weekly seasonality (nếu có): các ngày trong tuần khác nhau ra sao (thứ 2 thấp, thứ 6 cao...).       
-                                                    """)
                 except Exception as e:
                     st.write("Không thể vẽ Prophet components:", e)
 
@@ -429,31 +466,59 @@ def app():
                 plt.legend()
                 plt.grid(True)
                 st.pyplot(plt)
-                st.markdown("""
-                ### 📊 Mean Absolute Error by Horizon
-                Biểu đồ này thể hiện mức độ sai số trung bình của dự báo tại từng bước thời gian trong tương lai.
-
-                - Trục X: số bước dự báo (ví dụ: tháng 1, tháng 2,...)
-                - Trục Y: sai số trung bình tuyệt đối (MAE)
-                - Đường biểu diễn: mỗi mô hình có một đường riêng
-                """)
+                # st.markdown("""
+                # ### 📊 Mean Absolute Error by Horizon
+                # Biểu đồ này thể hiện mức độ sai số trung bình của dự báo tại từng bước thời gian trong tương lai.
+                #
+                # - Trục X: số bước dự báo (ví dụ: tháng 1, tháng 2,...)
+                # - Trục Y: sai số trung bình tuyệt đối (MAE)
+                # - Đường biểu diễn: mỗi mô hình có một đường riêng
+                # """)
+                st.markdown(
+                    """
+                    <div class="recommendation-box">
+                        <h3>Mean Absolute Error by Horizon</h3>
+                        <p>Biểu đồ này thể hiện mức độ sai số trung bình của dự báo tại từng bước thời gian trong tương lai</p>
+                        <ul>
+                            <li> Trục X: số bước dự báo (ví dụ: tháng 1, tháng 2,...)</li>
+                            <li> Trục Y: sai số trung bình tuyệt đối (MAE)</li>   
+                            <li> Đường biểu diễn: mỗi mô hình có một đường riêng</li>                               
+                        </ul>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
         with st.expander("🧪 Đánh giá độ tin cậy của dự báo", expanded=True):
-            st.markdown("""
-            - **MAE, RMSE, MAPE** cho biết độ chính xác của mô hình trên dữ liệu thực tế.
-            - Nếu MAPE < 20%, có thể tin tưởng vào kết quả dự báo để ra quyết định.
-            - Residuals ổn định, không có xu hướng → mô hình hợp lý.
-            - Backtest (kiểm định thời gian) cho thấy mô hình không bị overfit.
-            """)
-        with st.expander("📊 Phân tích kết quả & khuyến nghị"):
-            st.markdown("""
-            ### 🧩 Phân tích
-            - Dự báo cho thấy doanh thu trong quý tới có xu hướng **tăng nhẹ** so với các kỳ trước.
-            - Biến động nằm trong mức sai số chấp nhận được (MAPE dưới 15%).
+            st.markdown(
+                """
+                <div class="recommendation-box">
+                    <h3>Đánh giá mô hình dự báo:</h3>
+                    <ul>
+                        <li><b>MAE, RMSE, MAPE</b> cho biết độ chính xác của mô hình trên dữ liệu thực tế.</li>
+                        <li>Nếu <b>MAPE &lt; 20%</b>, có thể tin tưởng vào kết quả dự báo để ra quyết định.</li>
+                        <li>Residuals ổn định, không có xu hướng → mô hình hợp lý.</li>
+                        <li>Backtest (kiểm định theo thời gian) cho thấy mô hình không bị overfit.</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            ### ✅ Khuyến nghị hành động
-            - **Nếu dự báo tăng:** Có thể xem xét tăng sản lượng, bổ sung hàng tồn kho, tăng marketing.
-            - **Nếu dự báo giảm:** Cần đánh giá lại chính sách giá, chiết khấu hoặc mở rộng tệp khách hàng.
-            """)
+        with st.expander("📊 Phân tích kết quả & khuyến nghị"):
+            st.markdown(
+                """
+                <div class="recommendation-box">
+                    <h3> Khuyến nghị hành động</h3>
+                    <ul>
+                        <li>Dự báo cho thấy doanh thu trong quý tới có xu hướng <b>tăng nhẹ</b> so với các kỳ trước.</li>
+                        <li>Biến động nằm trong mức sai số chấp nhận được (MAPE dưới 15%).</li>
+                        <li><b>Nếu dự báo tăng:</b> Có thể xem xét tăng sản lượng, bổ sung hàng tồn kho, tăng marketing.</li>
+                        <li><b>Nếu dự báo giảm:</b> Cần đánh giá lại chính sách giá, chiết khấu hoặc mở rộng tệp khách hàng.</li>
+                    </ul>                   
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         st.success("Hoàn tất chạy dự báo. Kiểm tra các tab trên.")
 

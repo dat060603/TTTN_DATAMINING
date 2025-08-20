@@ -19,10 +19,13 @@ def app():
             from components.data_loader import load_data
         except Exception:
             load_data = None
-
+        def local_css(file_name):
+            with open(file_name, "r", encoding="utf-8") as f:
+                st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+        local_css("style.css")
         # page config (should be one of the first streamlit calls)
         st.set_page_config(page_title="04_Optimize — Product Portfolio", layout="wide")
-        st.title("🧩 Product Portfolio Optimization — Revenue & Profit")
+        st.title("🧩 Tối ưu hóa danh mục sản phẩm — Revenue & Profit")
 
         # -------------------------
         # Helpers
@@ -414,230 +417,238 @@ def app():
                 """)
 
             st.markdown("---")
-            st.subheader("Recommendations")
-            st.write("""
-            - Nếu mục tiêu là **Doanh thu**: dùng Pareto theo Revenue để lấy tập sản phẩm chiếm ~80% doanh thu — tập trung marketing & tồn kho cho chúng.
-            - Nếu mục tiêu là **Lợi nhuận**: chuyển sang metric = Profit. Các sản phẩm top theo Profit có thể khác top theo Revenue (vì COST khác nhau).
-            - Luôn **sửa COST thực tế** (nếu có) để kết quả profit chính xác. Auto-fill chỉ để demo.
-            - Dùng tính năng Compare Baseline vs Selected để xem việc tập trung vào selected set thay đổi phân bố doanh thu/lợi nhuận theo Country/DealSize như thế nào.
-            """)
-        with tab2:
-            st.subheader("🚚 So sánh tối ưu chi phí: 1 kho vs 3 kho")
-
-            df = load_data()
-            df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
-
-            # Hàm tối ưu chi phí
-            def optimize_shipping_cost(df, warehouses, capacity):
-                options = []
-                for _, row in df.iterrows():
-                    for wh, wh_loc in warehouses.items():
-                        distance = np.sqrt((row['cust_x'] - wh_loc[0]) ** 2 + (row['cust_y'] - wh_loc[1]) ** 2)
-                        for day_offset in range(3):
-                            delivery_date = row['ORDERDATE'] + pd.Timedelta(days=day_offset)
-                            base_cost = distance * 0.4
-                            if delivery_date.weekday() >= 5:
-                                base_cost += 5
-                            if distance > 50:
-                                base_cost += 8
-                            options.append({
-                                'order_id': row['ORDERNUMBER'],
-                                'order_line': row['ORDERLINENUMBER'],
-                                'warehouse': wh,
-                                'delivery_date': delivery_date.strftime('%Y-%m-%d'),
-                                'cost': base_cost,
-                                'distance': distance
-                            })
-
-                cost_df = pd.DataFrame(options)
-                cost_dict = {
-                    (r['order_id'], r['order_line'], r['warehouse'], r['delivery_date']): r['cost']
-                    for _, r in cost_df.iterrows()
-                }
-
-                # MILP model
-                orders = cost_df[['order_id', 'order_line']].drop_duplicates().to_records(index=False)
-                x = LpVariable.dicts("x", cost_dict.keys(), cat=LpBinary)
-                model = LpProblem("Minimize_Shipping_Cost", LpMinimize)
-                model += lpSum(cost_dict[k] * x[k] for k in cost_dict.keys())
-
-                # Ràng buộc: mỗi order line 1 phương án
-                for oid, line in orders:
-                    model += lpSum(
-                        x[(oid, line, wh, date)]
-                        for (oi, li, wh, date) in cost_dict.keys()
-                        if oi == oid and li == line
-                    ) == 1
-
-                # Ràng buộc capacity
-                for wh in warehouses.keys():
-                    for d in cost_df['delivery_date'].unique():
-                        model += lpSum(
-                            x[(oid, line, w, dd)]
-                            for (oid, line, w, dd) in cost_dict.keys()
-                            if w == wh and dd == d
-                        ) <= capacity
-
-                model.solve(PULP_CBC_CMD(msg=False))
-
-                # Lấy kết quả
-                assignments = [
-                    (oid, line, wh, date, cost_dict[(oid, line, wh, date)])
-                    for (oid, line, wh, date) in cost_dict.keys()
-                    if pulp.value(x[(oid, line, wh, date)]) > 0.5
-                ]
-
-                result_df = pd.DataFrame(assignments, columns=['order_id', 'order_line', 'warehouse', 'delivery_date',
-                                                               'shipping_cost'])
-                return result_df
-            #
-
-            # 1 kho vs 3 kho
-            warehouses_1 = {"WH_ONLY": (0, 0)}
-            warehouses_3 = {"WH_A": (0, 0), "WH_B": (50, 0), "WH_C": (25, 43)}
-
-            res1 = optimize_shipping_cost(df, warehouses_1, capacity=18)
-            res3 = optimize_shipping_cost(df, warehouses_3, capacity=13)
-
-            # Plot tổng chi phí
-            total_costs = [res1['shipping_cost'].sum(), res3['shipping_cost'].sum()]
-            fig1 = px.bar(
-                x=["1 kho", "3 kho"],
-                y=total_costs,
-                labels={'x': "Kịch bản", 'y': "Tổng chi phí"},
-                text=total_costs
+            st.markdown(
+                """
+                <div class="recommendation-box">
+                    <h3>Khuyến nghị:</h3>
+                    <ul>
+                        <li>Nếu mục tiêu là <b>Doanh thu</b>: dùng Pareto theo Revenue để lấy tập sản phẩm chiếm ~80% doanh thu — tập trung marketing & tồn kho cho chúng.</li>
+                        <li>Nếu mục tiêu là <b>Lợi nhuận</b>: chuyển sang metric = Profit. Các sản phẩm top theo Profit có thể khác top theo Revenue (vì COST khác nhau).</li>
+                        <li>Có thể <b>sửa COST thực tế</b> (nếu có) để kết quả profit chính xác.</li>
+                        <li>Dùng tính năng <b>Compare Baseline vs Selected</b> để xem việc tập trung vào selected set thay đổi phân bố doanh thu/lợi nhuận theo Country/DealSize như thế nào.</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
-            st.plotly_chart(fig1, use_container_width=True)
 
-            # Histogram chi phí từng đơn
-            fig2 = go.Figure()
-            fig2.add_trace(go.Histogram(x=res1['shipping_cost'], name="1 kho", opacity=0.6))
-            fig2.add_trace(go.Histogram(x=res3['shipping_cost'], name="3 kho", opacity=0.6))
-            fig2.update_layout(
-                barmode='overlay',
-                xaxis_title="Chi phí đơn hàng",
-                yaxis_title="Số lượng",
-                title="Phân phối chi phí từng đơn"
-            )
-            st.plotly_chart(fig2, use_container_width=True)
-            # --- Kịch bản 1 kho ---
-            warehouses_1 = {"WH_ONLY": (0, 0)}
-            res1 = optimize_shipping_cost(df, warehouses_1, capacity=18)
-            total_cost1 = res1['shipping_cost'].sum()
-            st.subheader("📦 Kết quả kịch bản 1 kho")
-            st.dataframe(res1.head(20))
-            st.success(f"Tổng chi phí: {total_cost1:,.2f}")
-
-            # --- Kịch bản 3 kho ---
-            warehouses_3 = {"WH_A": (0, 0), "WH_B": (50, 0), "WH_C": (25, 43)}
-            res3 = optimize_shipping_cost(df, warehouses_3, capacity=13)
-            total_cost3 = res3['shipping_cost'].sum()
-            st.subheader("📦 Kết quả kịch bản 3 kho")
-            st.dataframe(res3.head(20))
-            st.success(f"Tổng chi phí: {total_cost3:,.2f}")
-
-        with tab3:
-            st.subheader("🚚 So sánh mô phỏng giao hàng (Capacity=18 vs Gốc)")
-            # --- Load dữ liệu ---
-            df = load_data()
-            df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
-            df = df.sort_values('ORDERDATE').reset_index(drop=True)
-            st.write("📦 Tổng số đơn:", len(df))
-
-            # --- Tham số tối ưu ---
-            capacity = 18
-            min_delay_days = 3
-            max_extend_days = 7
-
-            if st.button("▶️ Chạy mô phỏng tối ưu vận chuyển"):
-                st.info("⏳ Đang khởi tạo và giải mô hình tối ưu...")
-
-                # Khởi tạo mô hình LP
-                model = LpProblem("Simulate_Shipping", LpMinimize)
-                assign = {}
-
-                for i in df.index:
-                    start_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=min_delay_days)
-                    end_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=max_extend_days)
-                    for d in pd.date_range(start_date, end_date):
-                        assign[(i, d)] = LpVariable(f"assign_{i}_{d.date()}", cat=LpBinary)
-
-                # Hàm mục tiêu: giao càng sớm càng tốt
-                model += lpSum((d - df.loc[i, 'ORDERDATE']).days * assign[(i, d)] for (i, d) in assign)
-
-                # Ràng buộc: mỗi đơn giao đúng 1 ngày
-                for i in df.index:
-                    model += lpSum(assign[(ii, d)] for (ii, d) in assign if ii == i) == 1
-
-                # Ràng buộc: capacity mỗi ngày
-                all_days = sorted(set(d for (_, d) in assign))
-                for d in all_days:
-                    model += lpSum(assign[(i, dd)] for (i, dd) in assign if dd == d) <= capacity
-
-                # Giải mô hình
-                model.solve(PULP_CBC_CMD(msg=False, timeLimit=60))
-                st.success("✅ Giải xong!")
-
-                # Lấy kết quả SIM_SHIP_DATE sau tối ưu
-                sim_ship_dates = []
-                for i in df.index:
-                    ship_date = None
-                    start_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=min_delay_days)
-                    end_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=max_extend_days)
-                    for d in pd.date_range(start_date, end_date):
-                        if assign[(i, d)].value() == 1:
-                            ship_date = d
-                            break
-                    sim_ship_dates.append(ship_date)
-
-                df["SIM_SHIP_DATE_CAP18"] = sim_ship_dates
-                df["SHIP_DAYS_CAP18"] = (df["SIM_SHIP_DATE_CAP18"] - df["ORDERDATE"]).dt.days
-
-                # Hiển thị bảng dữ liệu so sánh
-                st.subheader("🔍 Xem trước dữ liệu")
-                st.dataframe(df[[
-                    "ORDERNUMBER", "ORDERDATE", "SIM_SHIP_DATE", "SIM_SHIP_DATE_CAP18",
-                    "SHIP_DAYS_CAP_OLD", "SHIP_DAYS_CAP18"
-                ]].head(20))
-
-                # --- Thống kê số lượng đơn theo số ngày giao ---
-                st.subheader("📋 Thống kê số lượng đơn theo số ngày giao hàng")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown("**Gốc**")
-                    df_old_counts = df['SHIP_DAYS_CAP_OLD'].value_counts().sort_index().reset_index()
-                    df_old_counts.columns = ['Số ngày giao hàng', 'Số đơn']
-                    fig_old = px.bar(
-                        df_old_counts,
-                        x='Số ngày giao hàng',
-                        y='Số đơn',
-                        title="Phân phối số ngày giao hàng - Gốc",
-                        text='Số đơn'
-                    )
-                    st.plotly_chart(fig_old, use_container_width=True)
-
-                with col2:
-                    st.markdown("**Capacity=18**")
-                    df_new_counts = df['SHIP_DAYS_CAP18'].value_counts().sort_index().reset_index()
-                    df_new_counts.columns = ['Số ngày giao hàng', 'Số đơn']
-                    fig_new = px.bar(
-                        df_new_counts,
-                        x='Số ngày giao hàng',
-                        y='Số đơn',
-                        title="Phân phối số ngày giao hàng - Sau tối ưu",
-                        text='Số đơn'
-                    )
-                    st.plotly_chart(fig_new, use_container_width=True)
-
-                # --- Biểu đồ histogram so sánh ---
-                st.subheader("📊 So sánh phân phối số ngày giao hàng")
-                hist_df = pd.DataFrame({
-                    "Gốc": df["SHIP_DAYS_CAP_OLD"],
-                    "Capacity=18": df["SHIP_DAYS_CAP18"]
-                })
-                fig_hist = px.histogram(
-                    hist_df.melt(value_vars=["Gốc", "Capacity=18"], var_name="Loại", value_name="Số ngày giao hàng"),
-                    x="Số ngày giao hàng", color="Loại", barmode="overlay",
-                    title="So sánh số ngày giao hàng: Gốc vs Capacity=18"
-                )
-                st.plotly_chart(fig_hist, use_container_width=True)
+        # with tab2:
+        #     st.subheader("🚚 So sánh tối ưu chi phí: 1 kho vs 3 kho")
+        #
+        #     df = load_data()
+        #     df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
+        #
+        #     # Hàm tối ưu chi phí
+        #     def optimize_shipping_cost(df, warehouses, capacity):
+        #         options = []
+        #         for _, row in df.iterrows():
+        #             for wh, wh_loc in warehouses.items():
+        #                 distance = np.sqrt((row['cust_x'] - wh_loc[0]) ** 2 + (row['cust_y'] - wh_loc[1]) ** 2)
+        #                 for day_offset in range(3):
+        #                     delivery_date = row['ORDERDATE'] + pd.Timedelta(days=day_offset)
+        #                     base_cost = distance * 0.4
+        #                     if delivery_date.weekday() >= 5:
+        #                         base_cost += 5
+        #                     if distance > 50:
+        #                         base_cost += 8
+        #                     options.append({
+        #                         'order_id': row['ORDERNUMBER'],
+        #                         'order_line': row['ORDERLINENUMBER'],
+        #                         'warehouse': wh,
+        #                         'delivery_date': delivery_date.strftime('%Y-%m-%d'),
+        #                         'cost': base_cost,
+        #                         'distance': distance
+        #                     })
+        #
+        #         cost_df = pd.DataFrame(options)
+        #         cost_dict = {
+        #             (r['order_id'], r['order_line'], r['warehouse'], r['delivery_date']): r['cost']
+        #             for _, r in cost_df.iterrows()
+        #         }
+        #
+        #         # MILP model
+        #         orders = cost_df[['order_id', 'order_line']].drop_duplicates().to_records(index=False)
+        #         x = LpVariable.dicts("x", cost_dict.keys(), cat=LpBinary)
+        #         model = LpProblem("Minimize_Shipping_Cost", LpMinimize)
+        #         model += lpSum(cost_dict[k] * x[k] for k in cost_dict.keys())
+        #
+        #         # Ràng buộc: mỗi order line 1 phương án
+        #         for oid, line in orders:
+        #             model += lpSum(
+        #                 x[(oid, line, wh, date)]
+        #                 for (oi, li, wh, date) in cost_dict.keys()
+        #                 if oi == oid and li == line
+        #             ) == 1
+        #
+        #         # Ràng buộc capacity
+        #         for wh in warehouses.keys():
+        #             for d in cost_df['delivery_date'].unique():
+        #                 model += lpSum(
+        #                     x[(oid, line, w, dd)]
+        #                     for (oid, line, w, dd) in cost_dict.keys()
+        #                     if w == wh and dd == d
+        #                 ) <= capacity
+        #
+        #         model.solve(PULP_CBC_CMD(msg=False))
+        #
+        #         # Lấy kết quả
+        #         assignments = [
+        #             (oid, line, wh, date, cost_dict[(oid, line, wh, date)])
+        #             for (oid, line, wh, date) in cost_dict.keys()
+        #             if pulp.value(x[(oid, line, wh, date)]) > 0.5
+        #         ]
+        #
+        #         result_df = pd.DataFrame(assignments, columns=['order_id', 'order_line', 'warehouse', 'delivery_date',
+        #                                                        'shipping_cost'])
+        #         return result_df
+        #     #
+        #
+        #     # 1 kho vs 3 kho
+        #     warehouses_1 = {"WH_ONLY": (0, 0)}
+        #     warehouses_3 = {"WH_A": (0, 0), "WH_B": (50, 0), "WH_C": (25, 43)}
+        #
+        #     res1 = optimize_shipping_cost(df, warehouses_1, capacity=18)
+        #     res3 = optimize_shipping_cost(df, warehouses_3, capacity=13)
+        #
+        #     # Plot tổng chi phí
+        #     total_costs = [res1['shipping_cost'].sum(), res3['shipping_cost'].sum()]
+        #     fig1 = px.bar(
+        #         x=["1 kho", "3 kho"],
+        #         y=total_costs,
+        #         labels={'x': "Kịch bản", 'y': "Tổng chi phí"},
+        #         text=total_costs
+        #     )
+        #     st.plotly_chart(fig1, use_container_width=True)
+        #
+        #     # Histogram chi phí từng đơn
+        #     fig2 = go.Figure()
+        #     fig2.add_trace(go.Histogram(x=res1['shipping_cost'], name="1 kho", opacity=0.6))
+        #     fig2.add_trace(go.Histogram(x=res3['shipping_cost'], name="3 kho", opacity=0.6))
+        #     fig2.update_layout(
+        #         barmode='overlay',
+        #         xaxis_title="Chi phí đơn hàng",
+        #         yaxis_title="Số lượng",
+        #         title="Phân phối chi phí từng đơn"
+        #     )
+        #     st.plotly_chart(fig2, use_container_width=True)
+        #     # --- Kịch bản 1 kho ---
+        #     warehouses_1 = {"WH_ONLY": (0, 0)}
+        #     res1 = optimize_shipping_cost(df, warehouses_1, capacity=18)
+        #     total_cost1 = res1['shipping_cost'].sum()
+        #     st.subheader("📦 Kết quả kịch bản 1 kho")
+        #     st.dataframe(res1.head(20))
+        #     st.success(f"Tổng chi phí: {total_cost1:,.2f}")
+        #
+        #     # --- Kịch bản 3 kho ---
+        #     warehouses_3 = {"WH_A": (0, 0), "WH_B": (50, 0), "WH_C": (25, 43)}
+        #     res3 = optimize_shipping_cost(df, warehouses_3, capacity=13)
+        #     total_cost3 = res3['shipping_cost'].sum()
+        #     st.subheader("📦 Kết quả kịch bản 3 kho")
+        #     st.dataframe(res3.head(20))
+        #     st.success(f"Tổng chi phí: {total_cost3:,.2f}")
+        #
+        # with tab3:
+        #     st.subheader("🚚 So sánh mô phỏng giao hàng (Capacity=18 vs Gốc)")
+        #     # --- Load dữ liệu ---
+        #     df = load_data()
+        #     df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])
+        #     df = df.sort_values('ORDERDATE').reset_index(drop=True)
+        #     st.write("📦 Tổng số đơn:", len(df))
+        #
+        #     # --- Tham số tối ưu ---
+        #     capacity = 18
+        #     min_delay_days = 3
+        #     max_extend_days = 7
+        #
+        #     if st.button("▶️ Chạy mô phỏng tối ưu vận chuyển"):
+        #         st.info("⏳ Đang khởi tạo và giải mô hình tối ưu...")
+        #
+        #         # Khởi tạo mô hình LP
+        #         model = LpProblem("Simulate_Shipping", LpMinimize)
+        #         assign = {}
+        #
+        #         for i in df.index:
+        #             start_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=min_delay_days)
+        #             end_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=max_extend_days)
+        #             for d in pd.date_range(start_date, end_date):
+        #                 assign[(i, d)] = LpVariable(f"assign_{i}_{d.date()}", cat=LpBinary)
+        #
+        #         # Hàm mục tiêu: giao càng sớm càng tốt
+        #         model += lpSum((d - df.loc[i, 'ORDERDATE']).days * assign[(i, d)] for (i, d) in assign)
+        #
+        #         # Ràng buộc: mỗi đơn giao đúng 1 ngày
+        #         for i in df.index:
+        #             model += lpSum(assign[(ii, d)] for (ii, d) in assign if ii == i) == 1
+        #
+        #         # Ràng buộc: capacity mỗi ngày
+        #         all_days = sorted(set(d for (_, d) in assign))
+        #         for d in all_days:
+        #             model += lpSum(assign[(i, dd)] for (i, dd) in assign if dd == d) <= capacity
+        #
+        #         # Giải mô hình
+        #         model.solve(PULP_CBC_CMD(msg=False, timeLimit=60))
+        #         st.success("✅ Giải xong!")
+        #
+        #         # Lấy kết quả SIM_SHIP_DATE sau tối ưu
+        #         sim_ship_dates = []
+        #         for i in df.index:
+        #             ship_date = None
+        #             start_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=min_delay_days)
+        #             end_date = df.loc[i, 'ORDERDATE'] + pd.Timedelta(days=max_extend_days)
+        #             for d in pd.date_range(start_date, end_date):
+        #                 if assign[(i, d)].value() == 1:
+        #                     ship_date = d
+        #                     break
+        #             sim_ship_dates.append(ship_date)
+        #
+        #         df["SIM_SHIP_DATE_CAP18"] = sim_ship_dates
+        #         df["SHIP_DAYS_CAP18"] = (df["SIM_SHIP_DATE_CAP18"] - df["ORDERDATE"]).dt.days
+        #
+        #         # Hiển thị bảng dữ liệu so sánh
+        #         st.subheader("🔍 Xem trước dữ liệu")
+        #         st.dataframe(df[[
+        #             "ORDERNUMBER", "ORDERDATE", "SIM_SHIP_DATE", "SIM_SHIP_DATE_CAP18",
+        #             "SHIP_DAYS_CAP_OLD", "SHIP_DAYS_CAP18"
+        #         ]].head(20))
+        #
+        #         # --- Thống kê số lượng đơn theo số ngày giao ---
+        #         st.subheader("📋 Thống kê số lượng đơn theo số ngày giao hàng")
+        #         col1, col2 = st.columns(2)
+        #         with col1:
+        #             st.markdown("**Gốc**")
+        #             df_old_counts = df['SHIP_DAYS_CAP_OLD'].value_counts().sort_index().reset_index()
+        #             df_old_counts.columns = ['Số ngày giao hàng', 'Số đơn']
+        #             fig_old = px.bar(
+        #                 df_old_counts,
+        #                 x='Số ngày giao hàng',
+        #                 y='Số đơn',
+        #                 title="Phân phối số ngày giao hàng - Gốc",
+        #                 text='Số đơn'
+        #             )
+        #             st.plotly_chart(fig_old, use_container_width=True)
+        #
+        #         with col2:
+        #             st.markdown("**Capacity=18**")
+        #             df_new_counts = df['SHIP_DAYS_CAP18'].value_counts().sort_index().reset_index()
+        #             df_new_counts.columns = ['Số ngày giao hàng', 'Số đơn']
+        #             fig_new = px.bar(
+        #                 df_new_counts,
+        #                 x='Số ngày giao hàng',
+        #                 y='Số đơn',
+        #                 title="Phân phối số ngày giao hàng - Sau tối ưu",
+        #                 text='Số đơn'
+        #             )
+        #             st.plotly_chart(fig_new, use_container_width=True)
+        #
+        #         # --- Biểu đồ histogram so sánh ---
+        #         st.subheader("📊 So sánh phân phối số ngày giao hàng")
+        #         hist_df = pd.DataFrame({
+        #             "Gốc": df["SHIP_DAYS_CAP_OLD"],
+        #             "Capacity=18": df["SHIP_DAYS_CAP18"]
+        #         })
+        #         fig_hist = px.histogram(
+        #             hist_df.melt(value_vars=["Gốc", "Capacity=18"], var_name="Loại", value_name="Số ngày giao hàng"),
+        #             x="Số ngày giao hàng", color="Loại", barmode="overlay",
+        #             title="So sánh số ngày giao hàng: Gốc vs Capacity=18"
+        #         )
+        #         st.plotly_chart(fig_hist, use_container_width=True)
