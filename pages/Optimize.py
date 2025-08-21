@@ -572,7 +572,7 @@ def app():
             res3_export.to_csv("shipping_result_3kho.csv", index=False)
             '''
         with tab3:
-            st.subheader("🚚 So sánh mô phỏng giao hàng (Capacity=18 vs Gốc)")
+            st.subheader("🚚 So sánh mô phỏng giao hàng ")
             # --- Load dữ liệu ---
             df = load_data()
             df['ORDERDATE'] = pd.to_datetime(df['ORDERDATE'])

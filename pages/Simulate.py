@@ -259,14 +259,15 @@ def app():
                 available_products = sorted(df['PRODUCTCODE'].unique())
             products = st.multiselect("ProductCode (tùy chọn)", available_products)
             st.markdown("---")
-            st.markdown("---")
-            st.subheader("Giả định chi phí ")
-            cost_pct_default = st.slider("Tỷ lệ chi phí trung bình trên Sales (%)", 0, 100, 50)
-            cost_ratio_price = st.slider("Tỷ lệ chi phí trên PRICEEACH (nếu muốn) (%)", 0, 100, 30)
+            # st.markdown("---")
+            #
+            # st.subheader("Giả định chi phí ")
+            # cost_pct_default = st.slider("Tỷ lệ chi phí trung bình trên Sales (%)", 0, 100, 50)
+            # cost_ratio_price = st.slider("Tỷ lệ chi phí trên PRICEEACH (nếu muốn) (%)", 0, 100, 30)
 
             st.markdown("---")
             st.subheader("Input: Thay đổi kịch bản")
-            price_change_pct = st.slider("% Thay đổi giá bán (Price Change %)", -80, 200, 0)
+            price_change_pct = st.slider("% Thay đổi giá bán ", -80, 200, 0)
             cost_change_pct = st.slider("% Thay đổi chi phí (Cost Change %)", -80, 200, 0)
             demand_change_pct = st.slider("% Thay đổi số lượng (Demand Change %)", -90, 500, 0)
             discount_rate = st.slider("Tỷ lệ chiết khấu / khuyến mãi (%)", 0, 100, 0)
@@ -278,9 +279,61 @@ def app():
 
             st.markdown("---")
             submitted = st.form_submit_button("🚀 Chạy mô phỏng")
+    # if not submitted:
+    #     st.info("⬆️ Chọn bộ lọc và tham số mô phỏng, sau đó bấm **Chạy mô phỏng**.")
+    #     return
+    # # Filter df
+    # df_filtered = df.copy()
+    # if productlines:
+    #     df_filtered = df_filtered[df_filtered['PRODUCTLINE'].isin(productlines)]
+    # if countries:
+    #     df_filtered = df_filtered[df_filtered['COUNTRY'].isin(countries)]
+    # if years:
+    #     df_filtered = df_filtered[df_filtered['YEAR_ID'].isin(years)]
+    # if products:
+    #     if len(products) > 0:
+    #         df_filtered = df_filtered[df_filtered['PRODUCTCODE'].isin(products)]
+    # if df_filtered.empty:
+    #     st.warning("Không có dữ liệu sau khi lọc — vui lòng điều chỉnh bộ lọc.")
+    #     return
+    # # Baseline metrics
+    # baseline = {}
+    # baseline['total_sales'] = df_filtered['SALES'].sum()
+    # baseline['total_qty'] = df_filtered['QUANTITYORDERED'].sum()
+    # # if 'COST' in df_filtered.columns:
+    # #     baseline['total_cost'] = df_filtered['COST'].sum()
+    # # else:
+    # #     baseline['total_cost'] = baseline['total_sales'] * (cost_pct_default / 100.0)
+    # # baseline['profit'] = baseline['total_sales'] - baseline['total_cost']
+    # baseline['total_cost'] = df_filtered['COST'].sum()
+    # baseline['profit'] = baseline['total_sales'] - baseline['total_cost']
+    # # Simulation
+    # df_sim = df_filtered.copy()
+    # # if 'COST' not in df_sim.columns:
+    # #     df_sim['COST_EST_PER_UNIT'] = df_sim['PRICEEACH'] * (cost_ratio_price / 100.0)
+    # #     df_sim['COST'] = df_sim['COST_EST_PER_UNIT'] * df_sim['QUANTITYORDERED']
+    #
+    # df_sim['PRICE_NEW'] = df_sim['PRICEEACH'] * (1 + price_change_pct / 100.0)
+    # df_sim['PRICE_NEW'] *= (1 - discount_rate / 100.0)
+    #
+    # df_sim['COST_PER_UNIT_OLD'] = np.where(df_sim['QUANTITYORDERED'] > 0,
+    #                                        df_sim['COST'] / df_sim['QUANTITYORDERED'],
+    #                                        df_sim['PRICEEACH'] * (cost_ratio_price / 100.0))
+    # df_sim['COST_PER_UNIT_NEW'] = df_sim['COST_PER_UNIT_OLD'] * (1 + cost_change_pct / 100.0)
+    #
+    # demand_from_marketing_pct = marketing_budget_pct * (marketing_elasticity / 100.0)
+    # df_sim['QUANTITY_NEW'] = df_sim['QUANTITYORDERED'] * (
+    #     1 + demand_change_pct / 100.0 + demand_from_marketing_pct / 100.0
+    # )
+    # df_sim['QUANTITY_NEW'] = df_sim['QUANTITY_NEW'].clip(lower=0)
+    #
+    # df_sim['SALES_NEW'] = df_sim['PRICE_NEW'] * df_sim['QUANTITY_NEW']
+    # df_sim['COST_NEW'] = df_sim['COST_PER_UNIT_NEW'] * df_sim['QUANTITY_NEW']
+    # df_sim['PROFIT_NEW'] = df_sim['SALES_NEW'] - df_sim['COST_NEW']
     if not submitted:
         st.info("⬆️ Chọn bộ lọc và tham số mô phỏng, sau đó bấm **Chạy mô phỏng**.")
         return
+
     # Filter df
     df_filtered = df.copy()
     if productlines:
@@ -289,46 +342,48 @@ def app():
         df_filtered = df_filtered[df_filtered['COUNTRY'].isin(countries)]
     if years:
         df_filtered = df_filtered[df_filtered['YEAR_ID'].isin(years)]
-    if products:
-        if len(products) > 0:
-            df_filtered = df_filtered[df_filtered['PRODUCTCODE'].isin(products)]
+    if products and len(products) > 0:
+        df_filtered = df_filtered[df_filtered['PRODUCTCODE'].isin(products)]
+
     if df_filtered.empty:
         st.warning("Không có dữ liệu sau khi lọc — vui lòng điều chỉnh bộ lọc.")
         return
-    # Baseline metrics
+
+    # Baseline metrics (dùng trực tiếp cột COST)
     baseline = {}
     baseline['total_sales'] = df_filtered['SALES'].sum()
     baseline['total_qty'] = df_filtered['QUANTITYORDERED'].sum()
-    if 'COST' in df_filtered.columns:
-        baseline['total_cost'] = df_filtered['COST'].sum()
-    else:
-        baseline['total_cost'] = baseline['total_sales'] * (cost_pct_default / 100.0)
+    baseline['total_cost'] = df_filtered['COST'].sum()
     baseline['profit'] = baseline['total_sales'] - baseline['total_cost']
 
     # Simulation
     df_sim = df_filtered.copy()
-    if 'COST' not in df_sim.columns:
-        df_sim['COST_EST_PER_UNIT'] = df_sim['PRICEEACH'] * (cost_ratio_price / 100.0)
-        df_sim['COST'] = df_sim['COST_EST_PER_UNIT'] * df_sim['QUANTITYORDERED']
+
+    # Tính COST_PER_UNIT dựa trên cột COST có sẵn
+    df_sim['COST_PER_UNIT_OLD'] = np.where(
+        df_sim['QUANTITYORDERED'] > 0,
+        df_sim['COST'] / df_sim['QUANTITYORDERED'],
+        0  # mặc định nếu QUANTITYORDERED = 0
+    )
+    df_sim['COST_PER_UNIT_NEW'] = df_sim['COST_PER_UNIT_OLD'] * (1 + cost_change_pct / 100.0)
 
     df_sim['PRICE_NEW'] = df_sim['PRICEEACH'] * (1 + price_change_pct / 100.0)
     df_sim['PRICE_NEW'] *= (1 - discount_rate / 100.0)
 
-    df_sim['COST_PER_UNIT_OLD'] = np.where(df_sim['QUANTITYORDERED'] > 0,
-                                           df_sim['COST'] / df_sim['QUANTITYORDERED'],
-                                           df_sim['PRICEEACH'] * (cost_ratio_price / 100.0))
-    df_sim['COST_PER_UNIT_NEW'] = df_sim['COST_PER_UNIT_OLD'] * (1 + cost_change_pct / 100.0)
-
     demand_from_marketing_pct = marketing_budget_pct * (marketing_elasticity / 100.0)
     df_sim['QUANTITY_NEW'] = df_sim['QUANTITYORDERED'] * (
-        1 + demand_change_pct / 100.0 + demand_from_marketing_pct / 100.0
+            1 + demand_change_pct / 100.0 + demand_from_marketing_pct / 100.0
     )
+    df_sim['QUANTITY_NEW'] = df_sim['QUANTITY_NEW'].clip(lower=0)
+    # giá tăng,nhu cầu giảm
+    # Thêm tham số Price Elasticity
+    # Ví dụ cho người dùng chọn qua slider
+
     df_sim['QUANTITY_NEW'] = df_sim['QUANTITY_NEW'].clip(lower=0)
 
     df_sim['SALES_NEW'] = df_sim['PRICE_NEW'] * df_sim['QUANTITY_NEW']
     df_sim['COST_NEW'] = df_sim['COST_PER_UNIT_NEW'] * df_sim['QUANTITY_NEW']
     df_sim['PROFIT_NEW'] = df_sim['SALES_NEW'] - df_sim['COST_NEW']
-
     # Aggregation
     agg_sim = df_sim.groupby('PRODUCTLINE').agg(
         sales_orig=('SALES', 'sum'),
