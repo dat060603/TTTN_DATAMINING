@@ -35,7 +35,7 @@ def app():
 
     col1, col2, col3, col4,col5  = st.columns(5)
     with col1:
-        st.markdown(f"<div class='metric-big'>💰 ${df['SALES'].sum():,.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-big'>💰 ${df['SALES'].sum():,.0f}</div>", unsafe_allow_html=True)
         st.markdown("<div class='metric-label'>Tổng doanh thu</div>", unsafe_allow_html=True)
     with col2:
         st.markdown(f"<div class='metric-big'>🧾 {df['ORDERNUMBER'].nunique():,}</div>", unsafe_allow_html=True)
@@ -53,6 +53,45 @@ def app():
         st.markdown("<div class='metric-label'>Độ lệch chuẩn</div>", unsafe_allow_html=True)
 
     st.markdown("---")
+    # biểu đồ % doanh thu
+    # Doanh thu theo năm
+    sales_by_year = df.groupby('YEAR_ID')['SALES'].sum().to_dict()
+    # Hàm tạo biểu đồ tròn tăng trưởng
+
+
+    def create_growth_pie(current, previous, year_label):
+        growth = round((current / previous) * 100, 1)
+        base = 100 if growth <= 100 else growth  # mở rộng base nếu vượt 100%
+        achieved = min(growth, 100)
+        extra = max(growth - 100, 0)
+
+        labels = ["Đạt được 100%", "Vượt mục tiêu"] if extra > 0 else ["Đạt được", "Còn lại"]
+        values = [achieved, extra if extra > 0 else base - achieved]
+
+        fig = go.Figure(data=[go.Pie(
+            labels=labels,
+            values=values,
+            hole=0.5,  # Không mỏng quá, chuẩn giao diện cũ
+            hoverinfo="label+percent",
+            textinfo="label+percent"
+        )])
+
+        fig.update_layout(
+            title_text=f"📊 Doanh thu {year_label}",
+            showlegend=False,
+            margin=dict(t=40, b=0, l=0, r=0),
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+
+        return fig
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(create_growth_pie(sales_by_year[2004], sales_by_year[2003], "2004 vs 2003"),
+                        use_container_width=True)
+    with col2:
+        st.plotly_chart(create_growth_pie(sales_by_year[2005], sales_by_year[2004], "2005 vs 2004"),
+                        use_container_width=True)
 
     # --- Bộ lọc dữ liệu ---
     with st.expander("🔍 Bộ lọc dữ liệu", expanded=True):
@@ -92,6 +131,8 @@ def app():
 
     # --- KPI sau khi lọc ---
     st.subheader("📌 Thống kê số liệu kinh doanh")
+    # Nhóm theo năm và tính tổng doanh thu
+
 
     # Hàm hiển thị KPI với CSS
     def kpi_card(value, label):

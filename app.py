@@ -55,7 +55,7 @@ if selected == "🏠 Home":
                 <li><b>Dashboard (Visualize):</b> Hiển thị trực quan doanh thu theo tháng, quốc gia, khách hàng,...</li>
                 <li><b>Describe:</b> Mô tả đặc điểm cơ bản của dữ liệu.</li>
                 <li><b>Data Reason:</b> Tìm hiểu nguyên nhân doanh thu thấp hoặc bất thường.</li>
-                <li><b>Optimize:</b> Tối ưu danh mục sản phẩm theo doanh thu và lợi nhuận.</li>
+                <li><b>Optimize:</b> Tối ưu danh mục sản phẩm theo doanh thu-lợi nhuận và tối ưu vận chuyển</li>
                 <li><b>Forecast:</b> Dự báo doanh thu theo thời gian.</li>
                 <li><b>Simulate:</b> Mô phỏng What-if để hỗ trợ ra quyết định.</li>
             </ul>

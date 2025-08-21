@@ -206,11 +206,6 @@ def app():
                 st.markdown(
                     f"**OLS Trendline:** coef = {model2.coef_[0]:.4f}, intercept = {model2.intercept_:.4f}, R² = {r2_score(y, model2.predict(X)):.4f}")
 
-        # st.markdown("""
-        #    **🧠 Giải thích:**
-        #    - Biểu đồ này giúp kiểm tra **giá cao có giúp tăng doanh thu không**.
-        #    - Nếu trendline lên → các sản phẩm giá cao vẫn bán chạy → có thể tăng giá dòng cao cấp.
-        #    """)
         st.markdown(
             """
             <div class="recommendation-box">
@@ -384,16 +379,19 @@ def app():
     # Tab 4: Hồi quy đơn giản
     # ===============================
     with tabs[3]:
-        st.subheader("4️⃣ Mô hình hồi quy nâng cao và đánh giá")
-        # Lựa chọn mô hình
-        reg_choice = st.radio("Chọn mô hình hồi quy:",
-                              options=[
-                                  "QUANTITYORDERED ~ PRICEEACH",
-                                  "SALES ~ QUANTITYORDERED + PRICEEACH",
-                                  "SALES ~ QUANTITYORDERED + PRICEEACH + PRODUCTLINE (dummy variables)"
-                              ])
+        def compute_rmse(y_true, y_pred):
+            return np.sqrt(np.mean((y_true - y_pred) ** 2))
 
-        # Xác định biến cần thiết và công thức
+        st.subheader("4️⃣ Mô hình hồi quy nâng cao và đánh giá")
+
+        # Lựa chọn mô hình
+        reg_choice = st.radio("Chọn mô hình hồi quy:", options=[
+            "QUANTITYORDERED ~ PRICEEACH",
+            "SALES ~ QUANTITYORDERED + PRICEEACH",
+            "SALES ~ QUANTITYORDERED + PRICEEACH + PRODUCTLINE (dummy variables)"
+        ])
+
+        # Xác định công thức và các cột cần
         if reg_choice == "QUANTITYORDERED ~ PRICEEACH":
             req_cols = ['PRICEEACH', 'QUANTITYORDERED']
             formula = "QUANTITYORDERED ~ PRICEEACH"
@@ -404,51 +402,96 @@ def app():
             req_cols = ['SALES', 'QUANTITYORDERED', 'PRICEEACH', 'PRODUCTLINE']
             formula = "SALES ~ QUANTITYORDERED + PRICEEACH + C(PRODUCTLINE)"
 
-        # Kiểm tra dữ liệu
-        if all(c in _data.columns for c in req_cols):
+        # Kiểm tra dữ liệu đầy đủ
+        if all(col in _data.columns for col in req_cols):
             reg_df = _data[req_cols].dropna()
             if len(reg_df) >= 10:
                 try:
+                    # Huấn luyện mô hình
                     model = smf.ols(formula, data=reg_df).fit()
-                    st.text(model.summary().as_text())
 
-                    # Xác định biến mục tiêu từ công thức
+                    # Dự đoán và đánh giá
                     target_var = formula.split("~")[0].strip()
-
-                    # Dự đoán và đánh giá sai số
                     preds = model.predict(reg_df)
+
                     if target_var in reg_df.columns:
                         y_true = reg_df[target_var]
-                        st.write("MAE:", mean_absolute_error(y_true, preds))
-                        st.write("RMSE:", compute_rmse(y_true, preds))
+                        mae = mean_absolute_error(y_true, preds)
+                        rmse = compute_rmse(y_true, preds)
+                        r2 = model.rsquared
+
+                        # Tóm tắt mô hình
+                        st.markdown("### 📈 Kết quả mô hình")
+                        st.markdown(f"**R² (Độ phù hợp):** {r2:.4f}  ")
+                        st.markdown(f"**MAE (Sai số tuyệt đối TB):** {mae:.2f}  ")
+                        st.markdown(f"**RMSE (Căn sai số bình phương):** {rmse:.2f}  ")
+
+                        # Diễn giải hệ số
+                        # Khuyến nghị tự động từ hệ số hồi quy
+                        st.markdown("### ✅ Khuyến nghị từ mô hình:")
+                        recommendations = []
+                        for var, coef in model.params.items():
+                            if var == 'Intercept':
+                                continue
+                            abs_coef = abs(coef)
+                            # Xử lý tên biến nếu là biến phân loại (dummy)
+                            if "C(PRODUCTLINE)" in var:
+                                product = var.replace("C(PRODUCTLINE)[T.", "").replace("]", "")
+                                if coef < 0:
+                                    recommendations.append(
+                                        f"• Doanh thu từ dòng sản phẩm **{product}** thấp hơn so với dòng chuẩn. "
+                                        f"👉 Xem xét **khuyến mãi, cải thiện sản phẩm hoặc chiến dịch marketing** cho dòng này.")
+                                else:
+                                    recommendations.append(f"• Dòng sản phẩm **{product}** mang lại doanh thu cao hơn. "
+                                                           f"👉 Có thể **tăng đầu tư hoặc tập trung bán hàng** cho dòng này.")
+                            elif var == "PRICEEACH":
+                                if coef < 0:
+                                    recommendations.append(
+                                        "• **Tăng giá bán có xu hướng làm giảm doanh thu/số lượng**. "
+                                        "👉 Cân nhắc giữ giá ổn định hoặc dùng chiến lược giá hợp lý.")
+                                else:
+                                    recommendations.append("• **Tăng giá có thể vẫn giúp tăng doanh thu**. "
+                                                           "👉 Có thể xem xét tăng giá ở mức hợp lý.")
+                            elif var == "QUANTITYORDERED":
+                                if coef > 0:
+                                    recommendations.append("• **Số lượng đặt hàng ảnh hưởng tích cực đến doanh thu**. "
+                                                           "👉 Ưu tiên thúc đẩy bán gói combo/số lượng lớn.")
+                                else:
+                                    recommendations.append(
+                                        "• **Số lượng đặt hàng tăng không làm tăng doanh thu tương ứng**. "
+                                        "👉 Xem xét lại chiến lược giá theo số lượng.")
+
+                        # Hiển thị khuyến nghị
+                        if recommendations:
+                            for rec in recommendations:
+                                st.markdown(rec)
+                        else:
+                            st.info("Không tìm thấy khuyến nghị rõ ràng từ hệ số mô hình.")
+
+                        # Biểu đồ residuals
+                        st.subheader("📊 Biểu đồ sai số (Residual Plot)")
+                        residuals = y_true - preds
+                        fig_residual = px.scatter(
+                            x=preds,
+                            y=residuals,
+                            labels={"x": "Giá trị dự đoán", "y": "Sai số (Residuals)"},
+                            title="Residual Plot: Giá trị dự đoán vs Sai số"
+                        )
+                        fig_residual.add_hline(y=0, line_dash="dash", line_color="red")
+                        st.plotly_chart(fig_residual, use_container_width=True)
+
+                        # Tùy chọn xem chi tiết
+                        with st.expander("📄 Xem bảng thống kê mô hình chi tiết (dành cho phân tích chuyên sâu)"):
+                            st.text(model.summary().as_text())
+
                     else:
                         st.warning(f"Không tìm thấy biến mục tiêu '{target_var}' trong dữ liệu.")
-
-                    # Giải thích ý nghĩa hệ số đơn giản
-                    st.markdown("**Giải thích ý nghĩa hệ số hồi quy:**")
-                    coef_info = []
-                    for var, coef in model.params.items():
-                        if var == 'Intercept':
-                            continue
-                        coef_info.append(f"- **{var}**: Hệ số = {coef:.4f} — "
-                                         + ("tăng" if coef > 0 else "giảm")
-                                         + f" biến phụ thuộc khi biến này tăng 1 đơn vị, giữ các biến khác cố định.")
-                    st.markdown("\n".join(coef_info))
-
-                    # Biểu đồ residual plot
-                    st.subheader("Biểu đồ residual plot")
-                    residuals = reg_df[req_cols[0]] - preds
-                    fig_residual = px.scatter(x=preds, y=residuals,
-                                              labels={"x": "Giá trị dự đoán", "y": "Residuals (Sai số)"},
-                                              title="Residual Plot: Giá trị dự đoán vs Sai số")
-                    fig_residual.add_hline(y=0, line_dash="dash", line_color="red")
-                    st.plotly_chart(fig_residual, use_container_width=True)
                 except Exception as e:
-                    st.error(f"Lỗi khi chạy mô hình hồi quy: {e}")
+                    st.error(f"❌ Lỗi khi chạy mô hình hồi quy: {e}")
             else:
-                st.warning("Không đủ dữ liệu để chạy mô hình (cần ≥10 dòng).")
+                st.warning("Không đủ dữ liệu để chạy mô hình (cần ít nhất 10 dòng dữ liệu).")
         else:
-            st.warning("Thiếu dữ liệu cần thiết để chạy mô hình.")
+            st.warning("Thiếu dữ liệu cần thiết để huấn luyện mô hình.")
         st.markdown(
             """
             <div class="recommendation-box">
