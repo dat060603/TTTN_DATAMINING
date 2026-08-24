@@ -7,7 +7,6 @@ html, body, .block-container {
     font-family: 'Segoe UI', sans-serif;
     background-color: #F5F5F5;
     color: #333333;
-
 }
 .block-container {
     padding-top: 10rem;  /* hoặc 60px */
@@ -22,13 +21,61 @@ h1, h2, h3 {
     font-weight: 700;
 }
 h1 {
-    font-size: 36px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 10px;        /* cỡ chữ nhỏ hơn default */
+    font-weight: 600;       /* đậm vừa phải */
+    color: #4A90E2;         /* màu xanh chủ đạo */
+    margin-bottom: 15px;    /* khoảng cách với phần nội dung phía dưới */
+}
+.custom-title {
+    font-size: 16px;         /* cỡ chữ */
+    font-weight: 700;        /* đậm hơn */
+    color: #2c3e50;          /* màu tối chuyên nghiệp */
+    margin-bottom: 20px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    border-bottom: 2px solid #4A90E2;  /* gạch chân nhẹ */
+    padding-bottom: 5px;
+}
+/* ----- Chỉnh style chung cho tất cả st.subheader ----- */
+/* Áp dụng cho tất cả subheader do Streamlit render */
+.stHeading {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 20px;         /* nhỏ hơn mặc định */
+    font-weight: 600;
+    color: #2a2a2a;          /* màu tối vừa phải */
+    margin-top: 15px;
+    margin-bottom: 10px;
 }
 h2 {
-    font-size: 28px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;        /* cỡ chữ nhỏ hơn default */
+    font-weight: 500;
+    color: #333;            /* màu chữ đậm vừa phải */
+    margin-top: 20px;
+    margin-bottom: 10px;
 }
 h3 {
-    font-size: 22px;
+    font-size: 15px;
+}
+/* Title */
+h1.stHeading {
+    font-size: 28px;
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* Header */
+h2.stHeading {
+    font-size: 24px;
+    color: #2a2a2a;
+    font-weight: 600;
+}
+
+/* Subheader */
+h3.stHeading {
+    font-size: 20px;
+    color: #333;
+    font-weight: 500;
 }
 
 /* ======= SIDEBAR ======= */
@@ -190,3 +237,109 @@ tbody tr:nth-child(even) {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+.analysis-box {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-left: 5px solid #4CAF50;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+.metric-big {
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+    }
+.metric-label {
+        text-align: center;
+        font-size: 8px;
+        color: gray;
+    }
+/* Khung thông tin / recommendation box */
+
+/* Khung thông tin / recommendation box */
+.recommendation-box {
+    background-color: #f9f9f9; /* nền nhẹ */
+    border-left: 5px solid #4A90E2; /* thanh màu bên trái */
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.5;
+    color: #333;
+}
+.recommendation-box h3 {
+    margin-top: 0;
+    color: #4A90E2;
+}
+
+/* KPI box nhỏ gọn */
+.kpi-row {
+    display: flex;
+    flex-wrap: wrap;       /* tự xuống dòng nếu màn hình hẹp */
+    gap: 20px;             /* khoảng cách giữa các box */
+    justify-content: flex-start; /* căn lề trái */
+}
+
+.kpi-box {
+    flex: 0 0 200px;       /* mỗi box rộng 200px, không co dãn */
+    max-width: 200px;
+    background-color: #f5f5f5;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.kpi-box .metric-big {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.kpi-box .metric-label {
+    font-size: 14px;
+    color: #555;
+}
+
+
+.kpi-box:hover {
+    transform: translateY(-2px);
+}
+
+.metric-big {
+
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.metric-label {
+    font-size: 14px;
+    color: #555;
+    text-align: center;
+}
+/* Hàng KPI gọn */
+.kpi-value {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.kpi-label {
+    font-size: 14px;
+    color: #555;
+}
+
+.custom-pie {
+    border-radius: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    background-color: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+.custom-pie:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
