@@ -1,20 +1,26 @@
-
 import streamlit as st
 from streamlit_option_menu import option_menu
 from components.data_loader import load_data
-# def local_css(file_name):
-#     with open(file_name) as f:
-#         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-# local_css("style.css")
-# Cấu hình trang
-st.set_page_config(page_title="App phân tích bán hàng", page_icon="📊", layout="wide")
 
+# 1. Cấu hình trang (GỌI DUY NHẤT 1 LẦN Ở ĐẦY)
+# Đã thêm initial_sidebar_state="expanded" để ép menu luôn mở
+st.set_page_config(
+    page_title="App phân tích bán hàng", 
+    page_icon="📊", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# 2. Khởi tạo CSS
 def local_css(file_name):
-    with open(file_name, "r", encoding="utf-8") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-local_css("style.css")
-# Sidebar custom menu
+    try:
+        with open(file_name, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass # Bỏ qua lỗi nếu file style.css không tồn tại
+# local_css("style.css")
+
+# 3. Sidebar custom menu
 with st.sidebar:
     selected = option_menu(
         menu_title="",
@@ -24,26 +30,15 @@ with st.sidebar:
             "🔍 Data Reason",
             "💡 Optimize",
             "📅 Forecast",
-            "🎯 Simulate",
-            # "Tối ưu vận chuyển",
-            # "Tối ưu chi phi"
+            "🎯 Simulate"
         ],
         icons=["house", "bar-chart", "file-text", "search", "lightbulb", "calendar", "rocket"],
         default_index=0
     )
 
-# Điều hướng đến các trang tương ứng
+# 4. Điều hướng đến các trang
 if selected == "🏠 Home":
-    import streamlit as st
-    from components.data_loader import load_data
-
-    # Cấu hình trang
-    st.set_page_config(
-        page_title="App phân tích bán hàng",
-        page_icon="📊",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
+    # KHÔNG gọi lại st.set_page_config ở đây nữa!
     st.title("📊 Ứng dụng Phân tích và Khai thác Dữ liệu Doanh nghiệp")
     st.markdown('<div class="fade-in"><h3>🚀 Chào mừng bạn đến với ứng dụng phân tích bán hàng!</h3></div>',
                 unsafe_allow_html=True)
@@ -69,13 +64,10 @@ if selected == "🏠 Home":
     with st.expander("📄 Xem trước dữ liệu"):
         st.dataframe(df.head())
     st.markdown("📌 Chọn từng mục trên menu để khám phá các chức năng!")
+
 elif selected == "📈 Dashboard":
     import pages.Dashboard as dashboard
     dashboard.app()
-
-# elif selected == "📝 Describe":
-#     import pages.Describe as describe
-#     describe.app()
 
 elif selected == "🔍 Data Reason":
     import pages.Data_Reason as data_reason
@@ -92,9 +84,3 @@ elif selected == "📅 Forecast":
 elif selected == "🎯 Simulate":
     import pages.Simulate as simulate
     simulate.app()
-elif selected =="Tối ưu vận chuyển":
-    import pages.toiuugiaohang as giaohang
-    giaohang.app()
-elif selected =="Tối ưu chi phi":
-    import pages.toiuuchiphi as chiphi
-    chiphi.app()

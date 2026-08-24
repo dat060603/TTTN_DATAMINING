@@ -24,12 +24,44 @@ def app():
     # ====== Utilities ======
     def aggregate_time_series(df, date_col, value_col, freq):
         df = df.copy()
+
+        # Convert date
         df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-        ts = df.set_index(date_col)[value_col].resample(freq).sum().reset_index()
+
+        # Remove invalid dates and null values
+        df = df.dropna(subset=[date_col, value_col])
+
+        # Pandas mới dùng ME thay cho M
+        resample_freq = 'M' if freq == 'ME' else freq
+
+        # Aggregate
+        ts = (
+            df.set_index(date_col)[value_col]
+            .resample(resample_freq)
+            .sum()
+            .reset_index()
+        )
+
+        # Rename columns for Prophet / forecasting
         ts.columns = ['ds', 'y']
-        idx = pd.date_range(ts['ds'].min(), ts['ds'].max(), freq=freq)
-        ts = ts.set_index('ds').reindex(idx).rename_axis('ds').reset_index()
+
+        # Create continuous time index
+        idx = pd.date_range(
+            start=ts['ds'].min(),
+            end=ts['ds'].max(),
+            freq=resample_freq
+        )
+
+        ts = (
+            ts.set_index('ds')
+            .reindex(idx)
+            .rename_axis('ds')
+            .reset_index()
+        )
+
+        # Missing periods = 0
         ts['y'] = ts['y'].fillna(0)
+
         return ts
     def prepare_lr_features(series, freq):
         df = series.copy().sort_values('ds').reset_index(drop=True)
@@ -78,20 +110,78 @@ def app():
 
     def build_future_lr_features(df_feat, horizon, freq):
         last_t = df_feat['t'].iloc[-1]
-        future_t = np.arange(last_t + 1, last_t + 1 + horizon)
-        freq_for_offset = {'D': 'D', 'W': 'W', 'ME': 'M'}[freq]
-        future_ds = pd.date_range(df_feat['ds'].max() + pd.tseries.frequencies.to_offset(freq_for_offset),
-                                  periods=horizon, freq=freq)
-        future_df = pd.DataFrame({'ds': future_ds, 't': future_t})
+
+        future_t = np.arange(
+            last_t + 1,
+            last_t + 1 + horizon
+        )
+
+        # Normalize frequency
+        if freq == 'ME':
+            freq_for_offset = 'M'
+        elif freq == 'D':
+            freq_for_offset = 'D'
+        elif freq == 'W':
+            freq_for_offset = 'W'
+        elif freq == 'M':
+            freq_for_offset = 'M'
+        else:
+            raise ValueError(f"Unsupported frequency: {freq}")
+
+        # Future dates
+        future_ds = pd.date_range(
+            start=df_feat['ds'].max()
+            + pd.tseries.frequencies.to_offset(freq_for_offset),
+            periods=horizon,
+            freq=freq_for_offset
+        )
+
+        future_df = pd.DataFrame({
+            'ds': future_ds,
+            't': future_t
+        })
+
+        # Time trend
         future_df['t2'] = future_df['t'] ** 2
+
+        # Month
         future_df['month'] = future_df['ds'].dt.month
-        month_dummies = pd.get_dummies(future_df['month'], prefix='m', drop_first=True)
-        existing_month_cols = [c for c in df_feat.columns if c.startswith('m_')]
+
+        # Create month dummy variables
+        month_dummies = pd.get_dummies(
+            future_df['month'],
+            prefix='m',
+            drop_first=True
+        )
+
+        # Get month columns used during training
+        existing_month_cols = [
+            c for c in df_feat.columns
+            if c.startswith('m_')
+        ]
+
+        # Align future dummy columns with training columns
         for c in existing_month_cols:
-            future_df[c] = month_dummies[c] if c in month_dummies else 0
-        period = 12 if freq in ['M', 'ME'] else 52 if freq == 'W' else 365
-        future_df['sin1'] = np.sin(2 * np.pi * future_df['t'] / period)
-        future_df['cos1'] = np.cos(2 * np.pi * future_df['t'] / period)
+            if c in month_dummies.columns:
+                future_df[c] = month_dummies[c]
+            else:
+                future_df[c] = 0
+
+        # Seasonal features
+        period = (
+            12 if freq in ['M', 'ME']
+            else 52 if freq == 'W'
+            else 365
+        )
+
+        future_df['sin1'] = np.sin(
+            2 * np.pi * future_df['t'] / period
+        )
+
+        future_df['cos1'] = np.cos(
+            2 * np.pi * future_df['t'] / period
+        )
+
         return future_df.drop(columns=['month'])
 
     # Rolling-origin backtest returning per-horizon errors (list of lists) and average metrics
