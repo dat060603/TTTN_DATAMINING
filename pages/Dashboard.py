@@ -438,7 +438,7 @@ def app():
                 ts['ORDERDATE'] = pd.to_datetime(ts['ORDERDATE'])
 
             ts = ts.groupby('ORDERDATE')['SALES'].sum().reset_index().sort_values('ORDERDATE')
-            ts = ts.set_index('ORDERDATE').resample('ME').sum().reset_index()
+            ts = ts.set_index('ORDERDATE').resample('M').sum().reset_index()
             ts['month_str'] = ts['ORDERDATE'].dt.strftime('%Y-%m')
             ts['rolling_3m'] = ts['SALES'].rolling(window=3, min_periods=1).mean()
 
