@@ -1,5 +1,9 @@
 # 📊 TTTN_DATAMINING - Business Data Analysis & Mining App
+## 📄 Project Report
 
+For more details about the data analysis, methodology, and results:
+
+👉 [View Data Analysis Report (PDF)](BaoCaoTTTN.pdf)
 ## 📌 Giới thiệu
 
 Dự án xây dựng một ứng dụng phân tích dữ liệu kinh doanh sử dụng **Streamlit**, hỗ trợ:
